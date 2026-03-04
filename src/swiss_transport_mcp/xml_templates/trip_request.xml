@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OJP xmlns="http://www.vdv.de/ojp" xmlns:siri="http://www.siri.org.uk/siri" version="2.0">
+  <OJPRequest>
+    <siri:ServiceRequest>
+      <siri:RequestTimestamp>{timestamp}</siri:RequestTimestamp>
+      <siri:RequestorRef>swiss-transport-mcp_prod</siri:RequestorRef>
+      <OJPTripRequest>
+        <siri:RequestTimestamp>{timestamp}</siri:RequestTimestamp>
+        <Origin>
+          <PlaceRef>
+            {origin_ref}
+            <n><Text>{origin_name}</Text></n>
+          </PlaceRef>
+          <DepArrTime>{dep_time}</DepArrTime>
+        </Origin>
+        <Destination>
+          <PlaceRef>
+            {destination_ref}
+            <n><Text>{destination_name}</Text></n>
+          </PlaceRef>
+        </Destination>
+        <Params>
+          <NumberOfResults>{limit}</NumberOfResults>
+          <IncludeIntermediateStops>false</IncludeIntermediateStops>
+          <IncludeRealtimeData>true</IncludeRealtimeData>
+          <IncludeLegProjection>false</IncludeLegProjection>
+          <IncludeTurnDescription>false</IncludeTurnDescription>
+        </Params>
+      </OJPTripRequest>
+    </siri:ServiceRequest>
+  </OJPRequest>
+</OJP>
