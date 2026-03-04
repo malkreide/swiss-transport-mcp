@@ -409,5 +409,4 @@ MIT – see [LICENSE](LICENSE)
 
 - **Daten:** [opentransportdata.swiss](https://opentransportdata.swiss/) – Bundesamt für Verkehr (BAV)
 - **Protokoll:** [Model Context Protocol](https://modelcontextprotocol.io/) – Anthropic / Linux Foundation
-- **Entwickelt von:** [Schulamt Stadt Zürich](https://www.stadt-zuerich.ch/schulamt) – KI-Fachgruppe
 - **Siehe auch:** [Zurich Open Data MCP](https://github.com/malkreide/zurich-opendata-mcp) – unser MCP-Server für Zürcher Stadtdaten
