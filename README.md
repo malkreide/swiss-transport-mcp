@@ -19,7 +19,7 @@
 
 Dieser MCP-Server ist die **Brücke zwischen KI und dem Schweizer ÖV**. Er ermöglicht es KI-Assistenten wie Claude, direkt auf Fahrplandaten, Echtzeit-Abfahrten, Routenplanung und vieles mehr zuzugreifen.
 
-**Metapher:** Ihre KI bekommt nicht nur ein GA (Generalabonnement) für Daten – sie bekommt ein **vollständiges Reiseinformationssystem**: Navigation + Störungsmeldungen + Auslastungsanzeige + Preisrechner + Zugformation. Alles über eine standardisierte Schnittstelle.
+**Metapher:** Deine KI bekommt nicht nur ein GA (Generalabonnement) für Daten – sie bekommt ein **vollständiges Reiseinformationssystem**: Navigation + Störungsmeldungen + Auslastungsanzeige + Preisrechner + Zugformation. Alles über eine standardisierte Schnittstelle.
 
 **Technisches Detail:** Die APIs von opentransportdata.swiss sprechen verschiedene Dialekte – OJP 2.0 (XML/SOAP), SIRI-SX (XML), REST/JSON. Dieser Server übersetzt alles in sauberes JSON für die KI. Ein «Dolmetscher», der mehrere Protokoll-Sprachen beherrscht.
 
@@ -65,7 +65,7 @@ Dieser MCP-Server ist die **Brücke zwischen KI und dem Schweizer ÖV**. Er erm�
 
 #### 1. API-Schlüssel holen (kostenlos)
 
-Registrieren Sie sich auf [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/) und abonnieren Sie die gewünschten APIs.
+Registriere dich auf [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/) und abonniere die gewünschten APIs.
 
 #### 2. Installation & Start
 
