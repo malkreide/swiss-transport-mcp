@@ -10,6 +10,7 @@
 > Verbindet KI-Modelle mit dem Schweizer ÖV-System – Fahrpläne, Echtzeit-Abfahrten, Routenplanung, Störungsmeldungen, Auslastungsprognosen, Ticketpreise, Zugformationen und Open Data von [opentransportdata.swiss](https://opentransportdata.swiss/).
 >
 > Connects AI models to the Swiss public transport system – timetables, real-time departures, journey planning, disruptions, occupancy forecasts, ticket prices, train formations and open data.
+>
 > Part of the [Swiss Public Data MCP Portfolio](https://github.com/malkreide/swiss-public-data-mcp)
 
 ---
