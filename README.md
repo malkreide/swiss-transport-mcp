@@ -1,100 +1,107 @@
-# 🚆 Swiss Transport MCP Server
+> 🇨🇭 **Part of the [Swiss Public Data MCP Portfolio](https://github.com/malkreide)**
 
-**MCP Server für Schweizer ÖV-Daten | MCP Server for Swiss Public Transport Data**
+# 🚆 swiss-transport-mcp
 
-[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-purple.svg)](https://modelcontextprotocol.io/)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Data Source](https://img.shields.io/badge/Data-opentransportdata.swiss-red.svg)](https://opentransportdata.swiss/)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-purple)](https://modelcontextprotocol.io/)
+[![Data Source](https://img.shields.io/badge/Data-opentransportdata.swiss-red)](https://opentransportdata.swiss/)
 
-> Verbindet KI-Modelle mit dem Schweizer ÖV-System – Fahrpläne, Echtzeit-Abfahrten, Routenplanung, Störungsmeldungen, Auslastungsprognosen, Ticketpreise, Zugformationen und Open Data von [opentransportdata.swiss](https://opentransportdata.swiss/).
->
-> Connects AI models to the Swiss public transport system – timetables, real-time departures, journey planning, disruptions, occupancy forecasts, ticket prices, train formations and open data.
->
-> **Part of the [Swiss Public Data MCP Portfolio](https://github.com/malkreide/swiss-public-data-mcp)**
+> MCP server connecting AI models to the Swiss public transport system – journey planning, real-time departures, disruptions, occupancy, ticket prices, train formations and open data from [opentransportdata.swiss](https://opentransportdata.swiss/).
+
+[🇩🇪 Deutsche Version](README.de.md)
 
 ---
 
-## 🇩🇪 Deutsch
+## Overview
 
-### Was ist das?
+**swiss-transport-mcp** gives AI assistants like Claude a complete Swiss travel information system – not just timetables, but also real-time disruption alerts, occupancy forecasts, ticket prices, and a full train formation view. All accessible through a single, standardised MCP interface.
 
-Dieser MCP-Server ist die **Brücke zwischen KI und dem Schweizer ÖV**. Er ermöglicht es KI-Assistenten wie Claude, direkt auf Fahrplandaten, Echtzeit-Abfahrten, Routenplanung und vieles mehr zuzugreifen.
+The various APIs at opentransportdata.swiss speak different protocols – OJP 2.0 (XML/SOAP), SIRI-SX (XML), REST/JSON. This server translates everything into clean JSON for the AI model, acting as a multilingual protocol interpreter.
 
-**Metapher:** Deine KI bekommt nicht nur ein GA (Generalabonnement) für Daten – sie bekommt ein **vollständiges Reiseinformationssystem**: Navigation + Störungsmeldungen + Auslastungsanzeige + Preisrechner + Zugformation. Alles über eine standardisierte Schnittstelle.
+**Anchor demo query:** *"Plan a school trip for 25 students from Zurich to the Technorama in Winterthur – check for disruptions and find the best departure."*
 
-**Technisches Detail:** Die APIs von opentransportdata.swiss sprechen verschiedene Dialekte – OJP 2.0 (XML/SOAP), SIRI-SX (XML), REST/JSON. Dieser Server übersetzt alles in sauberes JSON für die KI. Ein «Dolmetscher», der mehrere Protokoll-Sprachen beherrscht.
+---
 
-### Verfügbare Tools (11)
+## Features
 
-#### Kern-Tools (OJP / CKAN)
+- 🗺️ **Journey planning** (A → B with transfers, duration, transport mode) via OJP 2.0
+- 🕐 **Real-time departures** with delays and platform information
+- 🔍 **Stop search** by name or coordinates
+- 🚨 **Live disruption alerts** (cancellations, closures) via SIRI-SX
+- 📊 **Occupancy forecasts** for trains (SBB, BLS, Thurbo, SOB)
+- 💰 **Ticket prices** including class selection
+- 🚃 **Train formation** – coaches, classes, amenities, accessibility
+- 📦 **Open data catalogue** – ~90 transport datasets via CKAN
+- 🔑 **Graceful degradation** – server starts with core tools even without optional API keys
+- ☁️ **Dual transport** – stdio for Claude Desktop, Streamable HTTP/SSE for cloud deployment
 
-| Tool | Beschreibung | Datenquelle |
-|------|-------------|-------------|
-| `transport_search_stop` | Haltestellen suchen nach Name (z.B. «Zürich HB») | OJP 2.0 |
-| `transport_nearby_stops` | Haltestellen in der Nähe finden (Koordinaten) | OJP 2.0 |
-| `transport_departures` | Echtzeit-Abfahrtstafel mit Verspätungen & Gleisen | OJP 2.0 |
-| `transport_trip_plan` | Routenplanung A → B mit Umsteigen, Dauer, Verkehrsmittel | OJP 2.0 |
-| `transport_search_datasets` | Datenkatalog durchsuchen (~90 Datensätze) | CKAN¹ |
-| `transport_get_dataset` | Details zu einem Datensatz abrufen | CKAN¹ |
+---
 
-¹ *CKAN-Tools erfordern ein separates Abo im [API-Manager](https://api-manager.opentransportdata.swiss/). Die 4 OJP-Tools funktionieren unabhängig davon.*
+## Prerequisites
 
-#### Erweiterungstools (eigene API-Keys)
+- Python 3.11+
+- A free API key from [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/) (subscribe to **OJP 2.0** as minimum)
+- Optional: additional keys for SIRI-SX, Occupancy, Formation, OJP Fare
 
-| Tool | Beschreibung | Datenquelle |
-|------|-------------|-------------|
-| `get_transport_disruptions` | 🚨 Aktuelle Störungen, Zugausfälle, Streckensperrungen | SIRI-SX |
-| `get_train_occupancy` | 📊 Auslastungsprognose für Züge | Occupancy JSON |
-| `get_ticket_price` | 💰 Ticketpreise für Verbindungen | OJP Fare |
-| `get_train_composition` | 🚃 Wagenreihung, Klassen, Ausstattung | Formation REST |
-| `check_transport_api_status` | 🔍 Systemstatus aller APIs prüfen | Alle |
+---
 
-> 💡 **Die Erweiterungstools sind optional.** APIs ohne Key sind deaktiviert – der Server startet trotzdem mit den 6 Kern-Tools.
-
-### Anwendungsfälle
-
-- 🎒 **Schulweg-Assistent:** «Wie kommt ein Kind von der Langstrasse 100 zum Schulhaus Limmat?»
-- 🚌 **Klassenausflug-Planer:** «Plane eine Reise für 25 Schüler von Zürich zum Technorama in Winterthur»
-- ⏱️ **Echtzeit-Abfahrten:** «Nächste Abfahrten ab Zürich Stadelhofen?»
-- 📍 **Umgebungssuche:** «Welche Haltestellen sind in der Nähe von meinem Standort?»
-- 🚨 **Störungscheck:** «Gibt es Störungen auf der Strecke Zürich–Bern?»
-- 📊 **Auslastung:** «Wie voll ist der IC 1009 heute?»
-- 💰 **Preisauskunft:** «Was kostet ein Ticket von Wädenswil nach Bern?»
-- 🚃 **Zugformation:** «Hat der IC 708 einen Speisewagen?»
-
-### Schnellstart
-
-#### 1. API-Schlüssel holen (kostenlos)
-
-Registriere dich auf [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/) und abonniere die gewünschten APIs.
-
-#### 2. Installation & Start
+## Installation
 
 ```bash
-# Klonen
+# Clone the repository
 git clone https://github.com/malkreide/swiss-transport-mcp.git
 cd swiss-transport-mcp
 
-# Installieren
+# Install
 pip install -e .
+```
 
-# API-Key setzen (Minimum: OJP für die Kern-Tools)
+Or with `uvx` (no permanent installation):
+
+```bash
+uvx swiss-transport-mcp
+```
+
+---
+
+## Quickstart
+
+```bash
+# Set the minimum required key (OJP core tools)
 export TRANSPORT_API_KEY=your_key_here
 
-# Optional: Erweiterungs-Keys setzen
-export SIRI_SX_API_KEY=your_key_here
-export OCCUPANCY_API_KEY=your_key_here
-export FORMATION_API_KEY=your_key_here
-export OJP_FARE_API_KEY=your_key_here
-
-# Server starten (Stdio-Modus für Claude Desktop)
+# Start the server (stdio mode for Claude Desktop)
 swiss-transport-mcp
 ```
 
-#### 3. Claude Desktop Konfiguration
+Try it immediately in Claude Desktop:
 
-**Minimal (nur Kern-Tools):**
+> *"What are the next departures from Zurich Stadelhofen?"*
+> *"How do I get from Wädenswil to Bern by train?"*
+
+---
+
+## Configuration
+
+### Environment Variables
+
+| Variable | API | Required |
+|---|---|---|
+| `TRANSPORT_API_KEY` | Unified key for OJP + CKAN | ✅ (or individual keys) |
+| `TRANSPORT_OJP_API_KEY` | OJP 2.0 Journey Planner | Optional (override) |
+| `TRANSPORT_CKAN_API_KEY` | CKAN data catalogue | Optional (separate subscription) |
+| `SIRI_SX_API_KEY` | Disruption alerts (SIRI-SX) | Optional |
+| `OCCUPANCY_API_KEY` | Occupancy forecast | Optional |
+| `FORMATION_API_KEY` | Train formation | Optional |
+| `OJP_FARE_API_KEY` | Ticket prices (OJP Fare) | Optional |
+
+> APIs without a key are silently disabled – the server starts fine with just the 6 core tools.
+
+### Claude Desktop Configuration
+
+**Minimal (core tools only):**
 
 ```json
 {
@@ -109,7 +116,7 @@ swiss-transport-mcp
 }
 ```
 
-**Voll ausgestattet (alle 11 Tools):**
+**Full (all 11 tools):**
 
 ```json
 {
@@ -128,287 +135,180 @@ swiss-transport-mcp
 }
 ```
 
-**Pfad zur Konfigurationsdatei:**
+**Config file locations:**
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-### Cloud-Deployment (SSE für Browser-Zugriff)
+### Cloud Deployment (SSE for browser access)
 
-Für den Zugriff über **claude.ai im Browser** (z.B. auf verwalteten Arbeitsplätzen ohne Software-Installation):
+For use via **claude.ai in the browser** (e.g. on managed workstations without local software):
 
-#### Render.com (empfohlen)
+**Render.com (recommended):**
+1. Push/fork the repository to GitHub
+2. On [render.com](https://render.com): New Web Service → connect GitHub repo
+3. Render detects `render.yaml` automatically
+4. Set environment variables in the Render dashboard
+5. In claude.ai under Settings → MCP Servers, add: `https://your-app.onrender.com/sse`
 
-1. Repository auf GitHub forken/pushen
-2. Auf [render.com](https://render.com) → New Web Service → GitHub-Repo verbinden
-3. Render erkennt `render.yaml` automatisch
-4. Environment Variables im Render Dashboard setzen
-5. In claude.ai unter Settings → MCP Servers die URL eintragen:
-   ```
-   https://your-app.onrender.com/sse
-   ```
-
-#### Docker (lokal oder andere Cloud)
-
+**Docker:**
 ```bash
 docker build -t swiss-transport-mcp .
 docker run -p 8000:8000 \
   -e TRANSPORT_API_KEY=xxx \
   -e SIRI_SX_API_KEY=xxx \
-  -e OCCUPANCY_API_KEY=xxx \
-  -e FORMATION_API_KEY=xxx \
-  -e OJP_FARE_API_KEY=xxx \
   swiss-transport-mcp
 ```
 
-> 💡 **Eselsbrücke:** *«Stdio für den Entwickler-Laptop, SSE für den Browser.»*
-
-### Tool-Details: Erweiterungen
-
-#### 🚨 `get_transport_disruptions` – Störungsmeldungen
-
-```
-«Gibt es Störungen auf der Strecke Zürich–Bern?»
-→ get_transport_disruptions(filter_text="Zürich")
-```
-
-| Parameter | Beschreibung | Standard |
-|-----------|-------------|----------|
-| filter_text | Suchbegriff (Ort, Linie, Strecke) | alle |
-| language | DE, FR, IT, EN | DE |
-| max_results | Maximale Anzahl (1–50) | 15 |
-
-**API:** SIRI-SX · **Cache:** 120s · **Rate Limit:** 2/min
-
-#### 📊 `get_train_occupancy` – Auslastungsprognose
-
-```
-«Wie voll ist der IC 1009 heute?»
-→ get_train_occupancy(train_number="1009")
-
-«Wie voll sind Züge von Zürich nach Bern?»
-→ get_train_occupancy(departure_station="Zürich HB", arrival_station="Bern")
-```
-
-| Parameter | Beschreibung | Standard |
-|-----------|-------------|----------|
-| train_number | Zugnummer (z.B. «1009») | – |
-| departure_station | ODER: Abfahrtsort | – |
-| arrival_station | ODER: Ankunftsort | – |
-| operation_date | Betriebstag YYYY-MM-DD | heute |
-| operator | «11»=SBB, «33»=BLS, «65»=Thurbo | «11» |
-
-**API:** CKAN/Occupancy JSON · **Cache:** 300s · **Rate Limit:** 2/min
-
-#### 💰 `get_ticket_price` – Preisauskunft
-
-```
-«Was kostet Wädenswil nach Bern?»
-→ get_ticket_price(origin="Wädenswil", destination="Bern")
-
-«Preis 1. Klasse Basel–Genf morgen um 8?»
-→ get_ticket_price(origin="Basel SBB", destination="Genf",
-                    departure_time="2026-03-01T08:00", travel_class="first")
-```
-
-| Parameter | Beschreibung | Standard |
-|-----------|-------------|----------|
-| origin | Abfahrtsort | *nötig* |
-| destination | Ankunftsort | *nötig* |
-| departure_time | YYYY-MM-DDTHH:MM | jetzt |
-| travel_class | «first» oder «second» | «second» |
-
-**API:** OJP 2.0 Fare · **Cache:** 1800s · **Rate Limit:** 5/min
-
-#### 🚃 `get_train_composition` – Zugformation
-
-```
-«Hat der IC 708 einen Speisewagen?»
-→ get_train_composition(train_number="708")
-
-«Wo kann ich im BLS-Zug 2806 mit dem Rollstuhl einsteigen?»
-→ get_train_composition(train_number="2806", railway_company="BLSP")
-```
-
-| Parameter | Beschreibung | Standard |
-|-----------|-------------|----------|
-| train_number | Zugnummer (nur Nummer) | *nötig* |
-| railway_company | SBBP, BLSP, RhB, SOB, THURBO, etc. | «SBBP» |
-| operation_date | YYYY-MM-DD (nur heute für stop_based) | heute |
-| show_details | «stop_based», «vehicle_based», «full» | «stop_based» |
-
-**API:** Formation REST · **Cache:** 600s · **Rate Limit:** 5/min
+> 💡 *"stdio for the developer laptop, SSE for the browser."*
 
 ---
 
-## 🇬🇧 English
+## Available Tools
 
-### What is this?
-
-This MCP server connects AI models to the **Swiss public transport system**. It provides journey planning, real-time departures, stop search, disruption alerts, occupancy forecasts, ticket prices, train formations, and access to the transport open data catalog from [opentransportdata.swiss](https://opentransportdata.swiss/).
-
-**Metaphor:** Think of it as giving your AI a complete Swiss travel information system – not just a timetable, but also disruption alerts, crowd forecasts, ticket prices, and a train X-ray view.
-
-**Technical detail:** The various APIs use different protocols – OJP 2.0 (XML/SOAP), SIRI-SX (XML), REST/JSON. This server translates everything into clean JSON for the AI model.
-
-### Available Tools (11)
-
-#### Core Tools (OJP / CKAN)
+### Core Tools (OJP 2.0 / CKAN)
 
 | Tool | Description | Data Source |
-|------|-------------|-------------|
+|---|---|---|
 | `transport_search_stop` | Search stops/stations by name | OJP 2.0 |
 | `transport_nearby_stops` | Find nearby stops by coordinates | OJP 2.0 |
 | `transport_departures` | Real-time departure board with delays & platforms | OJP 2.0 |
-| `transport_trip_plan` | Plan a journey A → B with transfers | OJP 2.0 |
-| `transport_search_datasets` | Search the data catalog (~90 datasets) | CKAN¹ |
-| `transport_get_dataset` | Get full details of a dataset | CKAN¹ |
+| `transport_trip_plan` | Plan journey A → B with transfers, duration, mode | OJP 2.0 |
+| `transport_search_datasets` | Search open data catalogue (~90 datasets) | CKAN¹ |
+| `transport_get_dataset` | Get full details of a specific dataset | CKAN¹ |
 
-¹ *CKAN tools require a separate subscription in the [API Manager](https://api-manager.opentransportdata.swiss/). The 4 OJP tools work independently.*
+¹ *CKAN tools require a separate subscription in the [API Manager](https://api-manager.opentransportdata.swiss/).*
 
-#### Extension Tools (separate API keys)
+### Extension Tools (optional API keys)
 
 | Tool | Description | Data Source |
-|------|-------------|-------------|
-| `get_transport_disruptions` | 🚨 Current disruptions, cancellations, closures | SIRI-SX |
-| `get_train_occupancy` | 📊 Occupancy forecast for trains | Occupancy JSON |
+|---|---|---|
+| `get_transport_disruptions` | 🚨 Live disruptions, cancellations, line closures | SIRI-SX |
+| `get_train_occupancy` | 📊 Occupancy forecast for specific trains | Occupancy JSON |
 | `get_ticket_price` | 💰 Ticket prices for connections | OJP Fare |
-| `get_train_composition` | 🚃 Train formation, classes, amenities | Formation REST |
-| `check_transport_api_status` | 🔍 Health check all APIs | All |
+| `get_train_composition` | 🚃 Train formation, classes, accessibility | Formation REST |
+| `check_transport_api_status` | 🔍 Health check for all configured APIs | All |
 
-> 💡 **Extension tools are optional.** APIs without keys are disabled – the server starts fine with just the 6 core tools.
+### Example Use Cases
 
-### Quick Start
-
-1. **Get API key** (free): Register at [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/) and subscribe to **OJP 2.0**
-2. **Install & run:**
-   ```bash
-   git clone https://github.com/malkreide/swiss-transport-mcp.git
-   cd swiss-transport-mcp
-   pip install -e .
-   export TRANSPORT_API_KEY=your_key_here
-   swiss-transport-mcp
-   ```
-
-### Claude Desktop Configuration
-
-```json
-{
-  "mcpServers": {
-    "swiss-transport": {
-      "command": "swiss-transport-mcp",
-      "env": {
-        "TRANSPORT_API_KEY": "your_key_here"
-      }
-    }
-  }
-}
-```
-
-### Cloud Deployment (SSE for browser access)
-
-```bash
-docker build -t swiss-transport-mcp .
-docker run -p 8000:8000 -e TRANSPORT_API_KEY=xxx swiss-transport-mcp
-```
-
-Then add as remote MCP server in claude.ai: `https://your-host.onrender.com/sse`
-
-See `render.yaml` for one-click Render.com deployment.
+| Query | Tool |
+|---|---|
+| *"Next trains from Zurich Stadelhofen?"* | `transport_departures` |
+| *"Plan a trip for 25 students from Zurich to Winterthur Technorama"* | `transport_trip_plan` |
+| *"Any disruptions between Zurich and Bern?"* | `get_transport_disruptions` |
+| *"How full is IC 1009 today?"* | `get_train_occupancy` |
+| *"What does a ticket from Wädenswil to Bern cost?"* | `get_ticket_price` |
+| *"Does IC 708 have a dining car?"* | `get_train_composition` |
+| *"Which stops are near Langstrasse 100?"* | `transport_nearby_stops` |
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
-┌─────────────────┐     ┌───────────────────────────┐     ┌─────────────────────────┐
-│   Claude / AI   │────▶│   Swiss Transport MCP     │────▶│  opentransportdata.swiss │
-│   (MCP Host)    │◀────│   (MCP Server)            │◀────│                         │
-└─────────────────┘     │                           │     │  OJP 2.0  (XML/SOAP)    │
-                        │  11 Tools · 2 Resources   │     │  SIRI-SX  (XML)         │
-                        │  Stdio | SSE              │     │  CKAN     (REST/JSON)   │
-                        │                           │     │  Occupancy(REST/JSON)   │
-                        │  Kern:                    │     │  Formation(REST/JSON)   │
-                        │   api_client + ojp_client │     │  OJP Fare (XML/SOAP)    │
-                        │  Erweiterung:             │     └─────────────────────────┘
-                        │   api_infrastructure      │
-                        │   + siri_sx, occupancy,   │
-                        │     ojp_fare, formation   │
+┌─────────────────┐     ┌───────────────────────────┐     ┌──────────────────────────┐
+│   Claude / AI   │────▶│   Swiss Transport MCP     │────▶│  opentransportdata.swiss  │
+│   (MCP Host)    │◀────│   (MCP Server)            │◀────│                          │
+└─────────────────┘     │                           │     │  OJP 2.0  (XML/SOAP)     │
+                        │  11 Tools · 2 Resources   │     │  SIRI-SX  (XML)          │
+                        │  Stdio | SSE              │     │  CKAN     (REST/JSON)    │
+                        │                           │     │  Occupancy(REST/JSON)    │
+                        │  Core:                    │     │  Formation(REST/JSON)    │
+                        │   api_client + ojp_client │     │  OJP Fare (XML/SOAP)     │
+                        │  Extensions:              │     └──────────────────────────┘
+                        │   siri_sx, occupancy,     │
+                        │   ojp_fare, formation     │
                         └───────────────────────────┘
 ```
 
-### Infrastruktur-Konzepte (Erweiterungsmodule)
+### Infrastructure Components
 
-| Komponente | Metapher | Funktion |
-|------------|----------|----------|
-| RateLimiter | Türsteher | Begrenzt API-Aufrufe pro Zeitfenster |
-| SimpleCache | Wandtafel | Speichert Antworten für wiederholte Fragen |
-| APIClient | Telefonzentrale | Verwaltet Auth, Redirects, Fehler zentral |
-| APIConfig | Visitenkarte | Key, URL, Limits pro API |
+| Component | Metaphor | Function |
+|---|---|---|
+| RateLimiter | Bouncer | Limits API calls per time window |
+| SimpleCache | Whiteboard | Caches responses for repeated queries |
+| APIClient | Switchboard | Handles auth, redirects, errors centrally |
+| APIConfig | Business card | Key, URL, limits per API |
 
-### Caching-Strategie
+### Caching Strategy
 
-| API | Cache-TTL | Begründung |
-|-----|-----------|------------|
-| SIRI-SX | 120s | Störungen ändern sich nicht sekündlich |
-| Occupancy | 300s | Prognosen sind tagesbasiert |
-| Formation | 600s | Zugzusammensetzung ist für den Tag stabil |
-| OJP Fare | 1800s | Preise ändern sich selten untertags |
+| API | Cache TTL | Rationale |
+|---|---|---|
+| SIRI-SX | 120s | Disruptions don't change every second |
+| Occupancy | 300s | Forecasts are day-based |
+| Formation | 600s | Train composition is stable for the day |
+| OJP Fare | 1800s | Prices rarely change intraday |
 
-## 🔑 API Keys
+---
 
-Kostenlose API-Keys auf [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/).
+## Project Structure
 
-| Variable | API | Erforderlich |
-|----------|-----|-------------|
-| `TRANSPORT_API_KEY` | Unified Key für OJP + CKAN | ✅ (oder einzelne Keys) |
-| `TRANSPORT_OJP_API_KEY` | OJP 2.0 Journey Planner | Optional (Override) |
-| `TRANSPORT_CKAN_API_KEY` | CKAN Datenkatalog | Optional (separates Abo) |
-| `SIRI_SX_API_KEY` | Störungsmeldungen (SIRI-SX) | Optional |
-| `OCCUPANCY_API_KEY` | Auslastungsprognose | Optional |
-| `FORMATION_API_KEY` | Zugformation | Optional |
-| `OJP_FARE_API_KEY` | Ticketpreise (OJP Fare) | Optional |
-
-> 💡 **Tipp:** Sie können auch nur einzelne Erweiterungs-Keys setzen. APIs ohne Key sind deaktiviert – der Server startet trotzdem mit den Kern-Tools.
-
-## 📦 Data Sources
-
-| Quelle | Beschreibung | Protokoll |
-|--------|-------------|-----------|
-| **OJP 2.0** | Fahrplanauskunft, Haltestellensuche, Abfahrten | XML/SOAP via `api.opentransportdata.swiss/ojp20` |
-| **CKAN** | Datenkatalog mit ~90 Transport-Datensätzen | REST/JSON via `api.opentransportdata.swiss/ckan-api` |
-| **SIRI-SX** | Störungsmeldungen (alle Schweizer ÖV) | XML via SIRI-SX API |
-| **Occupancy** | Belegungsprognosen (SBB, BLS, Thurbo, SOB) | REST/JSON |
-| **Formation** | Zugformationen und Wagenreihung | REST/JSON |
-| **OJP Fare** | Ticketpreise | XML/SOAP via OJP 2.0 |
-
-## ⚠️ Bekannte Einschränkungen
-
-- **OJP Fare:** Rabatte (Halbtax, GA, Verbundsabos) sind nicht immer abgebildet
-- **Formation:** Stop-based Daten nur für HEUTE verfügbar (wegen Echtzeitdaten)
-- **Occupancy:** Nur SBB, BLS, Thurbo und SOB – keine Privatbahnen
-- **SIRI-SX:** Die XML-Antwort enthält ALLE Störungen der Schweiz → Filter nutzen!
-- **CKAN:** Erfordert ein separates Abo im API-Manager
-
-## 🧪 Testing
-
-```bash
-# Unit Tests (kein API-Key nötig)
-python tests/test_integration.py
-
-# Integrationstests (API-Key erforderlich)
-TRANSPORT_API_KEY=xxx python tests/test_integration.py
+```
+swiss-transport-mcp/
+├── src/swiss_transport_mcp/   # Main package
+│   ├── server.py              # FastMCP server, tool definitions
+│   ├── api_client.py          # Core OJP + CKAN client
+│   ├── ojp_client.py          # OJP 2.0 XML/SOAP parser
+│   ├── api_infrastructure.py  # RateLimiter, SimpleCache, APIClient
+│   ├── siri_sx.py             # Disruption alerts
+│   ├── occupancy.py           # Occupancy forecasts
+│   ├── ojp_fare.py            # Ticket prices
+│   └── formation.py           # Train formation
+├── tests/                     # Test suite
+├── Dockerfile                 # Container for cloud deployment
+├── render.yaml                # One-click Render.com deployment
+├── pyproject.toml             # Build configuration (hatchling)
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md                  # This file (English)
+└── README.de.md               # German version
 ```
 
-## 🤝 Contributing
+---
 
-Beiträge sind willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Details.
+## Known Limitations
 
-## 📜 License
+- **OJP Fare:** Discounts (Halbtax, GA, regional passes) are not always reflected
+- **Formation:** Stop-based data is only available for TODAY (real-time dependency)
+- **Occupancy:** SBB, BLS, Thurbo and SOB only – no private railways
+- **SIRI-SX:** Returns ALL Swiss disruptions → use the `filter_text` parameter
+- **CKAN:** Requires a separate subscription in the API Manager
 
-MIT – see [LICENSE](LICENSE)
+---
 
-## 🙏 Credits
+## Testing
 
-- **Daten:** [opentransportdata.swiss](https://opentransportdata.swiss/) – Bundesamt für Verkehr (BAV)
-- **Protokoll:** [Model Context Protocol](https://modelcontextprotocol.io/) – Anthropic / Linux Foundation
-- **Siehe auch:** [Zurich Open Data MCP](https://github.com/malkreide/zurich-opendata-mcp) – unser MCP-Server für Zürcher Stadtdaten
+```bash
+# Unit tests (no API key required)
+PYTHONPATH=src pytest tests/ -m "not live"
+
+# Integration tests (API key required)
+TRANSPORT_API_KEY=xxx pytest tests/ -m "live"
+```
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE)
+
+---
+
+## Author
+
+malkreide · [github.com/malkreide](https://github.com/malkreide)
+
+---
+
+## Credits & Related Projects
+
+- **Data:** [opentransportdata.swiss](https://opentransportdata.swiss/) – Federal Office of Transport (FOT/BAV)
+- **Protocol:** [Model Context Protocol](https://modelcontextprotocol.io/) – Anthropic / Linux Foundation
+- **Related:** [zurich-opendata-mcp](https://github.com/malkreide/zurich-opendata-mcp) – MCP server for Zurich city open data
+- **Portfolio:** [Swiss Public Data MCP Portfolio](https://github.com/malkreide)
