@@ -2,14 +2,15 @@
 
 **MCP Server für Schweizer ÖV-Daten | MCP Server for Swiss Public Transport Data**
 
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-purple.svg)](https://modelcontextprotocol.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-purple.svg)](https://modelcontextprotocol.io/)
 [![Data Source](https://img.shields.io/badge/Data-opentransportdata.swiss-red.svg)](https://opentransportdata.swiss/)
 
 > Verbindet KI-Modelle mit dem Schweizer ÖV-System – Fahrpläne, Echtzeit-Abfahrten, Routenplanung, Störungsmeldungen, Auslastungsprognosen, Ticketpreise, Zugformationen und Open Data von [opentransportdata.swiss](https://opentransportdata.swiss/).
 >
 > Connects AI models to the Swiss public transport system – timetables, real-time departures, journey planning, disruptions, occupancy forecasts, ticket prices, train formations and open data.
+> Part of the [Swiss Public Data MCP Portfolio](https://github.com/malkreide/swiss-public-data-mcp)
 
 ---
 
