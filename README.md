@@ -302,7 +302,7 @@ MIT License — see [LICENSE](LICENSE)
 
 ## Author
 
-malkreide · [github.com/malkreide](https://github.com/malkreide)
+Hayal Oezkan · [github.com/malkreide](https://github.com/malkreide)
 
 ---
 
