@@ -9,6 +9,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-purple)](https://modelcontextprotocol.io/)
 [![Datenquelle](https://img.shields.io/badge/Daten-opentransportdata.swiss-red)](https://opentransportdata.swiss/)
+![CI](https://github.com/malkreide/swiss-transport-mcp/actions/workflows/ci.yml/badge.svg)
 
 > MCP-Server, der KI-Modelle mit dem Schweizer ÖV-System verbindet – Routenplanung, Echtzeit-Abfahrten, Störungen, Auslastung, Ticketpreise, Zugformation und Open Data von [opentransportdata.swiss](https://opentransportdata.swiss/).
 
