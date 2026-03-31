@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" --system
+
+      - name: Lint with ruff
+        run: python -m ruff check src/
+
+      - name: Syntax check
+        run: |
+          python -m py_compile src/swiss_transport_mcp/server.py
+          python -m py_compile src/swiss_transport_mcp/api_client.py
+          python -m py_compile src/swiss_transport_mcp/api_infrastructure.py
+
+      - name: Import test
+        run: python -c "from swiss_transport_mcp.server import mcp; print('Import OK')"
+        env:
+          PYTHONPATH: src
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Check linting
+        run: python -m ruff check src/
+
+      - name: Check formatting
+        run: python -m ruff format --check src/
