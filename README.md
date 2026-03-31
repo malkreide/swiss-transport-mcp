@@ -2,7 +2,7 @@
 
 # 🚆 swiss-transport-mcp
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-0.2.0-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-purple)](https://modelcontextprotocol.io/)
@@ -147,18 +147,8 @@ For use via **claude.ai in the browser** (e.g. on managed workstations without l
 **Render.com (recommended):**
 1. Push/fork the repository to GitHub
 2. On [render.com](https://render.com): New Web Service → connect GitHub repo
-3. Render detects `render.yaml` automatically
-4. Set environment variables in the Render dashboard
-5. In claude.ai under Settings → MCP Servers, add: `https://your-app.onrender.com/sse`
-
-**Docker:**
-```bash
-docker build -t swiss-transport-mcp .
-docker run -p 8000:8000 \
-  -e TRANSPORT_API_KEY=xxx \
-  -e SIRI_SX_API_KEY=xxx \
-  swiss-transport-mcp
-```
+3. Set start command: `swiss-transport-mcp` with env `MCP_TRANSPORT=sse`
+4. In claude.ai under Settings → MCP Servers, add: `https://your-app.onrender.com/sse`
 
 > 💡 *"stdio for the developer laptop, SSE for the browser."*
 
@@ -245,24 +235,25 @@ docker run -p 8000:8000 \
 
 ```
 swiss-transport-mcp/
-├── src/swiss_transport_mcp/   # Main package
-│   ├── server.py              # FastMCP server, tool definitions
-│   ├── api_client.py          # Core OJP + CKAN client
-│   ├── ojp_client.py          # OJP 2.0 XML/SOAP parser
-│   ├── api_infrastructure.py  # RateLimiter, SimpleCache, APIClient
-│   ├── siri_sx.py             # Disruption alerts
-│   ├── occupancy.py           # Occupancy forecasts
-│   ├── ojp_fare.py            # Ticket prices
-│   └── formation.py           # Train formation
-├── tests/                     # Test suite
-├── Dockerfile                 # Container for cloud deployment
-├── render.yaml                # One-click Render.com deployment
-├── pyproject.toml             # Build configuration (hatchling)
+├── src/swiss_transport_mcp/        # Main package
+│   ├── server.py                   # FastMCP server, tool definitions
+│   ├── api_client.py               # Core OJP + CKAN client
+│   ├── ojp_client.py               # OJP 2.0 XML/SOAP parser
+│   ├── api_infrastructure.py       # RateLimiter, SimpleCache, APIClient
+│   ├── siri_sx.py                  # Disruption alerts
+│   ├── occupancy.py                # Occupancy forecasts
+│   ├── ojp_fare.py                 # Ticket prices
+│   └── formation.py                # Train formation
+├── tests/
+│   └── test_server.py              # Unit + integration tests
+├── .github/workflows/ci.yml        # GitHub Actions (Python 3.11/3.12/3.13)
+├── claude_desktop_config.json       # Example Claude Desktop config
+├── pyproject.toml
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
-├── README.md                  # This file (English)
-└── README.de.md               # German version
+├── README.md                        # This file (English)
+└── README.de.md                     # German version
 ```
 
 ---
@@ -292,6 +283,12 @@ TRANSPORT_API_KEY=xxx pytest tests/ -m "live"
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 

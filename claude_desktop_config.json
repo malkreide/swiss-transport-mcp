@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "swiss-transport": {
+      "command": "swiss-transport-mcp",
+      "env": {
+        "TRANSPORT_API_KEY": "your_key_here"
+      }
+    }
+  }
+}
