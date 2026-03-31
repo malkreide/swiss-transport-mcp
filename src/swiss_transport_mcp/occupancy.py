@@ -18,10 +18,9 @@ Die Dateien werden täglich aktualisiert. Wir laden sie via CKAN-API
 und cachen sie lokal, um Rate Limits zu schonen.
 """
 
-import json
-from datetime import datetime, date
-from typing import Optional
-from .api_infrastructure import TransportAPIClient, APIError
+from datetime import date
+
+from .api_infrastructure import APIError, TransportAPIClient
 
 # Betreiber-Mapping: Code → Name
 OPERATOR_MAP = {
@@ -46,21 +45,21 @@ OCCUPANCY_DATASET = "occupancy-forecast-json-dataset"
 async def get_occupancy_forecast(
     client: TransportAPIClient,
     train_number: str,
-    operation_date: Optional[str] = None,
+    operation_date: str | None = None,
     operator_ref: str = "11",
 ) -> str:
     """
     Holt die Auslastungsprognose für einen bestimmten Zug.
-    
+
     Args:
         client: Der konfigurierte API-Client
         train_number: Zugnummer (z.B. "1009", "IC 1", "S3 12345")
         operation_date: Betriebstag im Format YYYY-MM-DD (Standard: heute)
         operator_ref: Betreiber-Code ("11"=SBB, "33"=BLS, "65"=Thurbo, "82"=SOB)
-    
+
     Returns:
         Formatierter Text mit Auslastungsprognose pro Streckenabschnitt.
-    
+
     Ablauf:
     1. Lade die JSON-Datei für den gewünschten Betreiber + Tag
     2. Suche den Zug anhand der Zugnummer
@@ -118,14 +117,14 @@ async def get_occupancy_for_route(
     client: TransportAPIClient,
     departure_station: str,
     arrival_station: str,
-    operation_date: Optional[str] = None,
+    operation_date: str | None = None,
 ) -> str:
     """
     Sucht Auslastungsdaten für eine bestimmte Strecke (alle Betreiber).
-    
+
     Nützlich wenn man die Zugnummer nicht kennt, aber die Strecke.
     Beispiel: "Wie voll sind Züge von Zürich HB nach Bern heute?"
-    
+
     Limitierung: Durchsucht nur SBB-Daten, da die grössten Datensätze.
     Für BLS/Thurbo/SOB müsste man alle Dateien laden → zu viel Traffic.
     """
@@ -200,28 +199,23 @@ async def _fetch_occupancy_data(
     client: TransportAPIClient,
     operator_ref: str,
     operation_date: str,
-) -> Optional[dict]:
+) -> dict | None:
     """
     Lädt die Belegungsdaten für einen Betreiber und Tag.
-    
+
     Die Daten werden über die CKAN-API als JSON-Ressource geladen.
     Jede Datei ist benannt nach: {operatorRef}_{operationDate}.json
-    
-    Da die Dateien gross sein können (mehrere MB für SBB), 
+
+    Da die Dateien gross sein können (mehrere MB für SBB),
     nutzen wir aggressives Caching (TTL: 5 Minuten).
     """
     # Die CKAN-API nutzen, um die richtige Ressource zu finden
     # Format der Dateinamen: z.B. "11_2026-02-28.json"
-    resource_url = (
-        f"https://data.opentransportdata.swiss/dataset/"
-        f"{OCCUPANCY_DATASET}/resource_search"
-        f"?query=name:{operator_ref}_{operation_date}"
-    )
 
     try:
         result = await client.get(
             "occupancy",
-            path=f"/action/package_show",
+            path="/action/package_show",
             params={"id": OCCUPANCY_DATASET},
             cache_ttl_override=300,
         )
@@ -243,7 +237,7 @@ async def _fetch_occupancy_data(
 
         return None
 
-    except Exception as e:
+    except Exception:
         # Fallback: Direkte URL versuchen
         try:
             direct_url = (
@@ -263,7 +257,7 @@ async def _fetch_occupancy_data(
 def _clean_train_number(raw: str) -> str:
     """
     Bereinigt die Zugnummer.
-    
+
     Beispiele:
     - "IC 1009" → "1009"
     - "S3 12345" → "12345"
@@ -278,7 +272,7 @@ def _clean_train_number(raw: str) -> str:
     return numbers[-1] if numbers else raw.strip()
 
 
-def _find_train(data: dict, train_number: str) -> Optional[dict]:
+def _find_train(data: dict, train_number: str) -> dict | None:
     """Findet einen Zug in den Belegungsdaten."""
     for train in data.get("trains", []):
         if str(train.get("trainNumber", "")) == train_number:
@@ -305,7 +299,7 @@ def _filter_sections(sections: list, dep_lower: str, arr_lower: str) -> list:
 def _get_worst_occupancy(section: dict) -> str:
     """
     Gibt die schlechteste Auslastung eines Abschnitts zurück.
-    
+
     Logik: Wenn 2. Klasse "standingRoomOnly" ist, ist das die
     relevante Info, auch wenn die 1. Klasse noch Platz hat.
     Die meisten Reisenden fahren 2. Klasse.

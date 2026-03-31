@@ -23,8 +23,8 @@ Für vehicle_based: bis 3 Tage in die Zukunft.
 """
 
 from datetime import date
-from typing import Optional
-from .api_infrastructure import TransportAPIClient, APIError, NotFoundError
+
+from .api_infrastructure import APIError, NotFoundError, TransportAPIClient
 
 # EVU-Mapping: Kürzel → Vollname
 EVU_MAP = {
@@ -75,19 +75,19 @@ async def get_train_formation(
     client: TransportAPIClient,
     train_number: str,
     evu: str = "SBBP",
-    operation_date: Optional[str] = None,
+    operation_date: str | None = None,
     detail_level: str = "stop_based",
 ) -> str:
     """
     Holt die Zugzusammensetzung für einen bestimmten Zug.
-    
+
     Args:
         client: Der konfigurierte API-Client
         train_number: Zugnummer (z.B. "2806", "1009")
         evu: Eisenbahnverkehrsunternehmen (z.B. "SBBP", "BLSP", "RhB")
         operation_date: Betriebstag YYYY-MM-DD (Standard: heute)
         detail_level: "stop_based" (kompakt) oder "vehicle_based" (detailliert)
-    
+
     Returns:
         Formatierter Text mit Zugzusammensetzung, Wagenreihung und Ausstattung.
     """
@@ -223,7 +223,7 @@ def _format_stop(stop: dict) -> str:
     """Formatiert eine Haltestelle."""
     stop_point = stop.get("stopPoint", {})
     name = stop_point.get("name", "?")
-    sloid = stop_point.get("sloid", "")
+    stop_point.get("sloid", "")
 
     stop_time = stop.get("stopTime", {})
     arr = stop_time.get("arrival", "")
@@ -266,7 +266,7 @@ def _format_vehicle(vehicle: dict) -> str:
 def _explain_formation_string(short: str) -> str:
     """
     Erklärt den Formationskurzstring in menschenlesbarer Form.
-    
+
     Beispiel: "A[2,2,WR,1,1,LK]D" bedeutet:
     Sektor A: [2.Kl, 2.Kl, Restaurant, 1.Kl, 1.Kl, Lok] Sektor D
     """

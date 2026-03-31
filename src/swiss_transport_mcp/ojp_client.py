@@ -9,7 +9,7 @@ SIRI elements use the siri: prefix.
 
 import re
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +22,7 @@ TEMPLATE_DIR = Path(__file__).parent / "xml_templates"
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _load_template(name: str) -> str:
@@ -308,33 +308,44 @@ def _parse_leg(leg_el: ET.Element) -> dict[str, Any] | None:
         board = _find(timed, ".//LegBoard")
         if board is not None:
             n = _text(board, ".//StopPointName/Text")
-            if n: leg["from"] = n
+            if n:
+                leg["from"] = n
             dep = _text(board, ".//ServiceDeparture/TimetabledTime")
-            if dep: leg["departure"] = dep
+            if dep:
+                leg["departure"] = dep
             est_dep = _text(board, ".//ServiceDeparture/EstimatedTime")
-            if est_dep: leg["departure_realtime"] = est_dep
+            if est_dep:
+                leg["departure_realtime"] = est_dep
             plat = _text(board, ".//PlannedQuay/Text")
-            if plat: leg["platform_from"] = plat
+            if plat:
+                leg["platform_from"] = plat
 
         alight = _find(timed, ".//LegAlight")
         if alight is not None:
             n = _text(alight, ".//StopPointName/Text")
-            if n: leg["to"] = n
+            if n:
+                leg["to"] = n
             arr = _text(alight, ".//ServiceArrival/TimetabledTime")
-            if arr: leg["arrival"] = arr
+            if arr:
+                leg["arrival"] = arr
             est_arr = _text(alight, ".//ServiceArrival/EstimatedTime")
-            if est_arr: leg["arrival_realtime"] = est_arr
+            if est_arr:
+                leg["arrival_realtime"] = est_arr
             plat = _text(alight, ".//PlannedQuay/Text")
-            if plat: leg["platform_to"] = plat
+            if plat:
+                leg["platform_to"] = plat
 
         service = _find(timed, ".//Service")
         if service is not None:
             line = _text(service, ".//PublishedServiceName/Text")
-            if line: leg["line"] = line
+            if line:
+                leg["line"] = line
             mode = _text(service, ".//Mode/PtMode")
-            if mode: leg["mode"] = mode
+            if mode:
+                leg["mode"] = mode
             dest = _text(service, ".//DestinationText/Text")
-            if dest: leg["direction"] = dest
+            if dest:
+                leg["direction"] = dest
 
         return leg
 
@@ -346,7 +357,8 @@ def _parse_leg(leg_el: ET.Element) -> dict[str, Any] | None:
             ep = _find(continuous, f".//{endpoint}")
             if ep is not None:
                 n = _text(ep, ".//StopPointName/Text") or _text(ep, ".//LocationName/Text")
-                if n: leg[key] = n
+                if n:
+                    leg[key] = n
         return leg
 
     # Transfer Leg
@@ -363,15 +375,23 @@ def _parse_duration(iso_duration: str) -> str:
         text = iso_duration.replace("PT", "").replace("P", "")
         hours = minutes = seconds = 0
         if "H" in text:
-            parts = text.split("H"); hours = int(parts[0]); text = parts[1]
+            parts = text.split("H")
+            hours = int(parts[0])
+            text = parts[1]
         if "M" in text:
-            parts = text.split("M"); minutes = int(parts[0]); text = parts[1] if len(parts) > 1 else ""
+            parts = text.split("M")
+            minutes = int(parts[0])
+            text = parts[1] if len(parts) > 1 else ""
         if "S" in text:
             seconds = int(text.replace("S", "").split(".")[0] or "0")
-        if hours and minutes: return f"{hours}h {minutes}min"
-        elif hours: return f"{hours}h"
-        elif minutes: return f"{minutes}min"
-        elif seconds: return f"{seconds}s"
+        if hours and minutes:
+            return f"{hours}h {minutes}min"
+        elif hours:
+            return f"{hours}h"
+        elif minutes:
+            return f"{minutes}min"
+        elif seconds:
+            return f"{seconds}s"
         return iso_duration
     except (ValueError, IndexError):
         return iso_duration

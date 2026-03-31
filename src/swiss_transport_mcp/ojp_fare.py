@@ -20,9 +20,9 @@ Die API liefert den regulären Preis. Rabatte sind nicht immer abgebildet.
 """
 
 import xml.etree.ElementTree as ET
-from datetime import datetime, date
-from typing import Optional
-from .api_infrastructure import TransportAPIClient, APIError
+from datetime import datetime
+
+from .api_infrastructure import APIError, TransportAPIClient
 
 # OJP 2.0 Namespaces
 OJP_NS = {
@@ -35,13 +35,13 @@ async def get_fare_info(
     client: TransportAPIClient,
     origin: str,
     destination: str,
-    departure_time: Optional[str] = None,
+    departure_time: str | None = None,
     requestor_ref: str = "swiss-transport-mcp_prod",
     traveller_class: str = "second",
 ) -> str:
     """
     Holt Preisinformationen für eine ÖV-Verbindung.
-    
+
     Args:
         client: Der konfigurierte API-Client
         origin: Abfahrtsort (z.B. "Zürich HB", "8503000")
@@ -49,10 +49,10 @@ async def get_fare_info(
         departure_time: Abfahrtszeit ISO-Format (Standard: jetzt)
         requestor_ref: Referenz für die API (muss _test/_int/_prod enthalten)
         traveller_class: "first" oder "second"
-    
+
     Returns:
         Formatierter Text mit Preisinformationen.
-        
+
     Ablauf:
     1. OJP TripRequest senden → Route berechnen
     2. Aus der Route die Legs (Teilstrecken) extrahieren
@@ -114,10 +114,10 @@ async def get_simple_fare(
 ) -> str:
     """
     Vereinfachte Preisabfrage mit Haltestellennummern (BPUIC/SLOID).
-    
+
     Nützlich wenn die Haltestellennummern bereits bekannt sind
     (z.B. aus einer vorherigen OJP-Abfrage).
-    
+
     Gängige Haltestellennummern:
     - Zürich HB: 8503000
     - Bern: 8507000
@@ -151,7 +151,7 @@ async def get_simple_fare(
 def _build_trip_request(origin: str, destination: str, dep_time: str, requestor_ref: str) -> str:
     """
     Baut einen OJP 2.0 TripRequest als XML.
-    
+
     Wichtig: UseRealtime = false, weil Preise nicht auf Basis
     von Echtzeitdaten berechnet werden (laut API-Doku).
     """
@@ -187,7 +187,7 @@ def _build_trip_request(origin: str, destination: str, dep_time: str, requestor_
 def _build_fare_request(trip_data: dict, requestor_ref: str, traveller_class: str) -> str:
     """
     Baut einen OJP 2.0 FareRequest basierend auf Trip-Daten.
-    
+
     Der FareRequest enthält die Leg-Informationen aus dem TripResult,
     damit das NOVA-Backend den korrekten Preis berechnen kann.
     """
@@ -299,7 +299,7 @@ def _parse_trip_response(xml_text: str) -> list[dict]:
     return trips
 
 
-def _extract_leg(leg_element: ET.Element) -> Optional[dict]:
+def _extract_leg(leg_element: ET.Element) -> dict | None:
     """Extrahiert ein Leg (Teilstrecke) aus dem TripResult."""
     origin_name = _find_text(leg_element, "LegStart") or _find_deep_text(leg_element, "LegStart", "Name")
     dest_name = _find_text(leg_element, "LegEnd") or _find_deep_text(leg_element, "LegEnd", "Name")
@@ -325,7 +325,7 @@ def _extract_leg(leg_element: ET.Element) -> Optional[dict]:
 def _parse_fare_response(xml_text: str) -> list[dict]:
     """
     Parst die OJP FareDelivery und extrahiert Preise.
-    
+
     Die Antwort enthält FareProducts mit:
     - FareProductName: z.B. "Einzelbillett"
     - Price/Amount: z.B. "51.00"

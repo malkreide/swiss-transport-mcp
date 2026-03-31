@@ -2,7 +2,7 @@
 SIRI-SX Störungsmeldungen – Das Frühwarnsystem deines MCP-Servers.
 
 Metapher: Stell dir SIRI-SX vor wie die Durchsagen am Bahnhof.
-Ohne sie weiss Claude zwar den Fahrplan, aber nicht, dass 
+Ohne sie weiss Claude zwar den Fahrplan, aber nicht, dass
 der Zug gerade 20 Minuten Verspätung hat oder ausfällt.
 
 API-Details:
@@ -18,9 +18,9 @@ Deshalb parsen wir gezielt und liefern nur relevante Infos ans LLM.
 """
 
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
-from typing import Optional
-from .api_infrastructure import TransportAPIClient, APIError
+from datetime import datetime
+
+from .api_infrastructure import APIError, TransportAPIClient
 
 # SIRI-SX Namespaces – die XML-Struktur nutzt mehrere Namensräume
 NS = {
@@ -30,24 +30,24 @@ NS = {
 
 async def get_disruptions(
     client: TransportAPIClient,
-    filter_text: Optional[str] = None,
+    filter_text: str | None = None,
     language: str = "DE",
     max_results: int = 20,
 ) -> str:
     """
     Holt aktuelle Störungsmeldungen aus SIRI-SX.
-    
+
     Args:
         client: Der konfigurierte API-Client
         filter_text: Optionaler Suchbegriff (z.B. "Zürich", "S-Bahn", "IC 1")
         language: Sprache der Meldungen (DE, FR, IT, EN)
         max_results: Maximale Anzahl Ergebnisse (verhindert Kontext-Overflow)
-    
+
     Returns:
         Formatierter Text mit allen relevanten Störungen.
-        
+
     Warum Text statt JSON? Weil ein LLM natürlichen Text besser versteht
-    als verschachtelte JSON-Strukturen. Das ist der Trick: 
+    als verschachtelte JSON-Strukturen. Das ist der Trick:
     Wir wandeln maschinenlesbare Daten in menschenlesbaren Kontext um.
     """
     try:
@@ -60,17 +60,17 @@ async def get_disruptions(
 
 def _parse_siri_sx(
     xml_text: str,
-    filter_text: Optional[str],
+    filter_text: str | None,
     language: str,
     max_results: int,
 ) -> str:
     """
     Parst die SIRI-SX XML-Antwort und extrahiert strukturierte Störungsmeldungen.
-    
+
     Die XML-Struktur ist:
-    Siri > ServiceDelivery > SituationExchangeDelivery > Situations 
+    Siri > ServiceDelivery > SituationExchangeDelivery > Situations
     > PtSituationElement (eine pro Störung)
-    
+
     Jedes PtSituationElement enthält:
     - CreationTime: Wann wurde die Störung erstellt?
     - ValidityPeriod: Von wann bis wann gilt sie?
@@ -148,9 +148,9 @@ def _parse_siri_sx(
     return "\n".join(lines)
 
 
-def _extract_disruption(element: ET.Element, lang: str) -> Optional[dict]:
+def _extract_disruption(element: ET.Element, lang: str) -> dict | None:
     """Extrahiert eine einzelne Störung aus einem PtSituationElement."""
-    
+
     def find_text(parent, tag, ns=NS):
         """Findet Text in einem Element, mit mehreren Fallback-Strategien."""
         # Mit Namespace
@@ -169,7 +169,7 @@ def _extract_disruption(element: ET.Element, lang: str) -> Optional[dict]:
 
     def find_multilang(parent, tag):
         """
-        Findet mehrsprachigen Text. 
+        Findet mehrsprachigen Text.
         SIRI-SX hat oft: <Summary xml:lang="de">Text</Summary>
         oder <Summary><DefaultedTextStructure xml:lang="de">Text</...></Summary>
         """

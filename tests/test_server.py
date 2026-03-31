@@ -11,7 +11,7 @@ import sys
 # Add project to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from swiss_transport_mcp import ojp_client, api_client
+from swiss_transport_mcp import api_client, ojp_client
 
 # Track results
 passed, failed, skipped = 0, 0, 0
@@ -37,7 +37,11 @@ def test_unit():
 
     # Test 1: XML templates load correctly
     try:
-        from swiss_transport_mcp.ojp_client import build_location_request, build_stop_event_request, build_trip_request
+        from swiss_transport_mcp.ojp_client import (
+            build_location_request,
+            build_stop_event_request,
+            build_trip_request,
+        )
         xml = build_location_request("Zürich", limit=5)
         assert "Zürich" in xml
         assert 'version="2.0"' in xml

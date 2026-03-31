@@ -11,13 +11,12 @@ hat eigene Rate Limits und liefert unterschiedliche Formate (XML, JSON, Protobuf
 Diese Infrastruktur handhabt das alles zentral.
 """
 
-import time
 import hashlib
 import json
 import logging
+import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
-from datetime import datetime, timezone
+from typing import Any
 
 import httpx
 
@@ -32,11 +31,11 @@ logger = logging.getLogger("swiss-transport-mcp")
 class RateLimiter:
     """
     Sliding-Window Rate Limiter.
-    
+
     Beispiel: GTFS-RT erlaubt 2 Abfragen pro Minute.
     Der Limiter merkt sich die Zeitpunkte der letzten Abfragen
     und blockiert neue, wenn das Limit erreicht ist.
-    
+
     Metapher: Wie ein Türsteher, der zählt, wie viele Leute
     in der letzten Minute reingegangen sind.
     """
@@ -85,13 +84,13 @@ class CacheEntry:
 class SimpleCache:
     """
     In-Memory Cache mit TTL (Time-to-Live).
-    
+
     Warum? Störungsmeldungen ändern sich nicht jede Sekunde.
     Wenn 5 User gleichzeitig fragen "Gibt es Störungen auf der Strecke
     Zürich-Bern?", schicken wir nur EINE Anfrage an die API
     und liefern das gecachte Ergebnis für die nächsten X Sekunden.
-    
-    Metapher: Wie eine Wandtafel im Lehrerzimmer – 
+
+    Metapher: Wie eine Wandtafel im Lehrerzimmer –
     einmal geschrieben, für alle lesbar, bis jemand wischt.
     """
 
@@ -104,7 +103,7 @@ class SimpleCache:
         raw = f"{prefix}:{json.dumps(params, sort_keys=True)}"
         return hashlib.md5(raw.encode()).hexdigest()
 
-    def get(self, prefix: str, params: dict) -> Optional[Any]:
+    def get(self, prefix: str, params: dict) -> Any | None:
         """Holt einen Wert aus dem Cache, falls noch gültig."""
         key = self._make_key(prefix, params)
         entry = self._store.get(key)
@@ -144,7 +143,7 @@ class SimpleCache:
 class APIConfig:
     """
     Konfiguration für eine einzelne API.
-    
+
     Jede API bei opentransportdata.swiss hat:
     - Einen eigenen API-Key (vom API-Manager)
     - Ein eigenes Rate Limit
@@ -161,14 +160,14 @@ class APIConfig:
 class TransportAPIClient:
     """
     Zentraler HTTP-Client für alle opentransportdata.swiss APIs.
-    
+
     Bündelt:
     - Authentifizierung (Bearer Token im Header)
     - Rate Limiting (pro API getrennt)
     - Caching (gemeinsamer Cache, aber pro API getrennte Schlüssel)
     - Fehlerbehandlung (Retries, Timeouts, HTTP-Fehler)
     - Redirect-Handling (GTFS-RT nutzt Redirects für Caching)
-    
+
     Metapher: Wie eine Telefonzentrale – ein Eingang,
     aber jeder Anruf wird an die richtige Abteilung weitergeleitet.
     """
@@ -197,7 +196,7 @@ class TransportAPIClient:
     ) -> dict | str:
         """
         Führt einen GET-Request gegen eine registrierte API aus.
-        
+
         Ablauf (wie eine Pipeline):
         1. Cache prüfen → Treffer? Sofort zurückgeben.
         2. Rate Limit prüfen → Zu viele Anfragen? Warten oder Fehler.
@@ -282,8 +281,8 @@ class TransportAPIClient:
     ) -> str:
         """
         Führt einen POST-Request mit XML-Body aus (für OJP).
-        
-        OJP ist eine SOAP-ähnliche Schnittstelle: 
+
+        OJP ist eine SOAP-ähnliche Schnittstelle:
         Man schickt XML rein, bekommt XML zurück.
         """
         config = self._configs.get(api_name)
@@ -359,13 +358,13 @@ def create_transport_client(
 ) -> TransportAPIClient:
     """
     Erstellt einen fertig konfigurierten TransportAPIClient.
-    
+
     Jede API, für die ein Key angegeben wird, wird registriert.
     Fehlende Keys = API nicht verfügbar (statt Crash).
-    
+
     Rate Limits und Cache-TTLs sind auf die API-Dokumentation abgestimmt:
     - SIRI-SX: 2 req/min, Cache 120s (Störungen ändern sich nicht sekündlich)
-    - Occupancy: 2 req/min, Cache 300s (Prognosen sind tagesbasiert)  
+    - Occupancy: 2 req/min, Cache 300s (Prognosen sind tagesbasiert)
     - Formation: 5 req/min, Cache 600s (Zugzusammensetzung ist stabil)
     - OJP Fare: 5 req/min, Cache 1800s (Preise ändern selten untertags)
     """

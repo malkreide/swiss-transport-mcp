@@ -22,17 +22,17 @@ Extension APIs (optional – kein Crash wenn Keys fehlen):
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import api_client, ojp_client
-from .api_infrastructure import create_transport_client, APIError
+from .api_infrastructure import create_transport_client
+from .formation import get_formation_health, get_train_formation
+from .occupancy import get_occupancy_for_route, get_occupancy_forecast
+from .ojp_fare import get_fare_info
 from .siri_sx import get_disruptions
-from .occupancy import get_occupancy_forecast, get_occupancy_for_route
-from .formation import get_train_formation, get_formation_health
-from .ojp_fare import get_fare_info, get_simple_fare
 
 logger = logging.getLogger("swiss-transport-mcp")
 
@@ -80,7 +80,7 @@ def _get_ext_client():
     return _ext_client
 
 
-def _check_api(api_name: str, env_var: str) -> Optional[str]:
+def _check_api(api_name: str, env_var: str) -> str | None:
     """Prüft ob ein API-Key konfiguriert ist."""
     key = os.environ.get(env_var)
     if not key:
