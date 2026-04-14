@@ -13,6 +13,10 @@
 
 > MCP-Server, der KI-Modelle mit dem Schweizer ÖV-System verbindet – Routenplanung, Echtzeit-Abfahrten, Störungen, Auslastung, Ticketpreise, Zugformation und Open Data von [opentransportdata.swiss](https://opentransportdata.swiss/).
 
+### Demo
+
+![Demo: Claude fragt Störungen und Abfahrten ab](docs/assets/demo.svg)
+
 ---
 
 ## Übersicht
@@ -255,6 +259,18 @@ swiss-transport-mcp/
 ├── README.md                        # Englische Hauptversion
 └── README.de.md                     # Diese Datei (Deutsch)
 ```
+
+---
+
+## Sicherheit & Grenzen
+
+- **Nur-Lesen:** Alle Tools verwenden ausschliesslich lesende Anfragen (HTTP GET / OJP XML POST nur für Abfragen) — es werden keine Daten auf vorgelagerten Systemen geschrieben, verändert oder gelöscht.
+- **Keine Personendaten:** Verbindungsabfragen sind transient und werden nicht durch diesen Server gespeichert. Die APIs liefern Fahrplan- und Echtzeit-Betriebsdaten. Keine personenbezogenen Daten (PII) werden verarbeitet oder gespeichert.
+- **Rate Limits:** opentransportdata.swiss erzwingt pro-Key-Rate-Limits (dokumentiert im API-Manager). Der eingebaute `RateLimiter` (SIRI-SX: 2 Req/Min, Formation/OJP Fare: 5 Req/Min) hält diese Grenzen automatisch ein. `limit`-Parameter bei Massenabfragen konservativ einsetzen.
+- **API-Key erforderlich:** Ein kostenloser Key von [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/) ist Pflicht. Keys sind an das eigene Konto gebunden — nur tatsächlich genutzte APIs abonnieren.
+- **Datenaktualität:** Echtzeit-Tools (Abfahrten, Störungen, Auslastung) spiegeln den Upstream-Stand zum Abfragezeitpunkt wider. Der Server cached Antworten für kurze TTLs (120s–1800s), um API-Last zu reduzieren — siehe Caching-Tabelle oben.
+- **Nutzungsbedingungen:** Daten unterliegen den Nutzungsbedingungen von [opentransportdata.swiss](https://opentransportdata.swiss/de/nutzungsbedingungen/). OJP, SIRI-SX und der CKAN-Katalog stehen unter offenen Lizenzen (ODbL / CC BY 4.0) für nicht-kommerzielle und Forschungszwecke.
+- **Keine Gewähr:** Dieses Projekt ist eine Community-Initiative ohne Verbindung zum Bundesamt für Verkehr (BAV) oder SBB. Verfügbarkeit hängt von den vorgelagerten APIs ab.
 
 ---
 

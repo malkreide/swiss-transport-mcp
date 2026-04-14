@@ -13,6 +13,10 @@
 
 [🇩🇪 Deutsche Version](README.de.md)
 
+### Demo
+
+![Demo: Claude queries disruptions and departures](docs/assets/demo.svg)
+
 ---
 
 ## Overview
@@ -255,6 +259,18 @@ swiss-transport-mcp/
 ├── README.md                        # This file (English)
 └── README.de.md                     # German version
 ```
+
+---
+
+## Safety & Limits
+
+- **Read-only:** All tools perform read-only requests (HTTP GET / OJP XML POST for queries only) — no data is written, modified, or deleted on any upstream system.
+- **No personal data:** Journey queries are transient and not stored by this server. The APIs return scheduled timetable and real-time operational data. No personally identifiable information (PII) is processed or retained.
+- **Rate limits:** opentransportdata.swiss enforces per-key rate limits (documented in the API Manager). The server's built-in `RateLimiter` (SIRI-SX: 2 req/min, Formation/OJP Fare: 5 req/min) stays within these bounds automatically. Use the `limit` parameters conservatively for bulk queries.
+- **API key required:** A free key from [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/) is mandatory. Keys are bound to your account's subscription — only subscribe to APIs you intend to use.
+- **Data freshness:** Real-time tools (departures, disruptions, occupancy) reflect the upstream source at query time. The server caches responses for short TTLs (120s–1800s) to reduce API load — see the Caching Strategy table above.
+- **Terms of service:** Data is subject to the ToS of [opentransportdata.swiss](https://opentransportdata.swiss/de/nutzungsbedingungen/). OJP, SIRI-SX, and the CKAN catalogue are published under open licences (ODbL / CC BY 4.0) for non-commercial and research use.
+- **No guarantees:** This server is a community project, not affiliated with the Federal Office of Transport (BAV/OFT) or SBB. Availability depends on upstream APIs.
 
 ---
 
