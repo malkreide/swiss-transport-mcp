@@ -26,6 +26,7 @@
 Die verschiedenen APIs von opentransportdata.swiss sprechen unterschiedliche Protokolle – OJP 2.0 (XML/SOAP), SIRI-SX (XML), REST/JSON. Dieser Server übersetzt alles in sauberes JSON für das KI-Modell und agiert als mehrsprachiger Protokoll-Dolmetscher.
 
 **Anker-Demo-Abfrage:** *«Plane einen Schulausflug für 25 Schülerinnen und Schüler von Zürich zum Technorama in Winterthur – prüfe Störungen und finde die beste Abfahrt.»*
+→ [Weitere Anwendungsbeispiele nach Zielgruppe](EXAMPLES.md) →
 
 ---
 
