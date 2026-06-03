@@ -3,7 +3,10 @@
 Alle relevanten Änderungen an diesem Projekt werden hier dokumentiert.
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [0.3.0] – 2026-06-03
+
+MCP best-practice audit remediation. Audit verification: 41 pass · 0 fail ·
+1 partial · 2 accepted-risk (catalog v0.5.0, hash `091f446b…`); production-ready.
 
 ### Security & hardening (MCP best-practice audit)
 
