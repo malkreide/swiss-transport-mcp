@@ -1,0 +1,35 @@
+# Local container run with explicit resource limits (SCALE-006).
+#
+#   TRANSPORT_API_KEY=xxx docker compose up --build
+#
+# The server is reachable at http://127.0.0.1:8000/mcp (Streamable HTTP).
+services:
+  swiss-transport-mcp:
+    build: .
+    image: swiss-transport-mcp
+    ports:
+      # Host loopback only; change to "0.0.0.0:8000:8000" to expose deliberately.
+      - "127.0.0.1:8000:8000"
+    environment:
+      MCP_TRANSPORT: streamable-http
+      MCP_HOST: 0.0.0.0          # inside the container, bind all interfaces
+      MCP_PORT: "8000"
+      LOG_LEVEL: INFO
+      # API keys – supply via your shell / .env (never commit them).
+      TRANSPORT_API_KEY: ${TRANSPORT_API_KEY:-}
+      SIRI_SX_API_KEY: ${SIRI_SX_API_KEY:-}
+      OCCUPANCY_API_KEY: ${OCCUPANCY_API_KEY:-}
+      FORMATION_API_KEY: ${FORMATION_API_KEY:-}
+      OJP_FARE_API_KEY: ${OJP_FARE_API_KEY:-}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    # SCALE-006: cap memory, CPU and file descriptors per container.
+    mem_limit: 256m
+    cpus: 0.50
+    pids_limit: 128
+    ulimits:
+      nofile:
+        soft: 1024
+        hard: 2048
+    restart: unless-stopped

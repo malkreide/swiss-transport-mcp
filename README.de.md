@@ -145,17 +145,26 @@ Sofort in Claude Desktop ausprobieren:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-### Cloud-Deployment (SSE für Browser-Zugriff)
+### Cloud-Deployment (Streamable HTTP)
 
-Für den Einsatz via **claude.ai im Browser** (z.B. auf verwalteten Arbeitsplätzen ohne lokale Software-Installation):
+Für den Einsatz via **claude.ai im Browser** (z.B. auf verwalteten Arbeitsplätzen ohne lokale Software-Installation). Der Cloud-Transport ist **Streamable HTTP** (`MCP_TRANSPORT=streamable-http`, Endpoint `/mcp`). SSE (`/sse`) wird weiterhin unterstützt, ist aber **veraltet**.
 
-**Render.com (empfohlen):**
+**Docker (empfohlen):**
+
+```bash
+TRANSPORT_API_KEY=xxx docker compose up --build
+# → http://127.0.0.1:8000/mcp
+```
+
+Das Image ist ein Multi-Stage-Build und läuft als **Nicht-Root**-User; `docker-compose.yml` setzt `read_only`, `no-new-privileges` und Memory-/CPU-/PID-Limits.
+
+**Render.com:**
 1. Repository auf GitHub pushen/forken
-2. Auf [render.com](https://render.com): New Web Service → GitHub-Repo verbinden
-3. Start-Befehl setzen: `swiss-transport-mcp` mit env `MCP_TRANSPORT=sse`
-4. In claude.ai unter Settings → MCP Servers eintragen: `https://your-app.onrender.com/sse`
+2. Auf [render.com](https://render.com): New Web Service → GitHub-Repo verbinden (Docker-Runtime)
+3. Env setzen: `MCP_TRANSPORT=streamable-http` **und `MCP_HOST=0.0.0.0`**
+4. In claude.ai unter Settings → MCP Servers eintragen: `https://your-app.onrender.com/mcp`
 
-> 💡 *«stdio für den Entwickler-Laptop, SSE für den Browser.»*
+> 💡 *«stdio für den Entwickler-Laptop, Streamable HTTP für die Cloud.»*
 
 ---
 
