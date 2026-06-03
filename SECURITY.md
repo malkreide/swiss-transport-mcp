@@ -37,9 +37,14 @@ They are portfolio-wide concerns best enforced at an MCP gateway / host layer,
 and the residual risk here is low because the server is read-only and only
 reaches a single trusted public-data provider.
 
+These are formally signed off in the
+[Risk Acceptance Register](audits/RISK-ACCEPTANCES.md) (RA-001 / RA-002), with a
+named risk owner, decision date, compensating controls and re-evaluation
+triggers.
+
 ### SEC-014 — Tool allow-listing via an MCP gateway
 
-**Status:** accepted risk (portfolio-level).
+**Status:** accepted risk (portfolio-level) — see RA-001.
 A per-tool allow-list belongs to the MCP host/gateway that aggregates multiple
 servers, not to an individual server that exposes a fixed, read-only tool set.
 If/when a central gateway is introduced for the portfolio, tool allow-listing
@@ -48,7 +53,7 @@ read-only and constrained by the egress allow-list above.
 
 ### SEC-015 — Pre-flight tool-poisoning detection
 
-**Status:** accepted risk (portfolio-level), with a local guard in place.
+**Status:** accepted risk (portfolio-level) — see RA-002 — with a local guard in place.
 Tool-poisoning (malicious tool descriptions / rug-pulls) is a supply-chain and
 host-side concern. This server's tool definitions are version-controlled and
 shipped from this repository; there is no dynamic/remote tool registration.

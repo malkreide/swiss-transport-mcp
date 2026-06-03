@@ -37,8 +37,10 @@ All notable changes to this project are documented here.
 - **ARCH-012:** capped `mcp`/`httpx`/`pydantic` to their current major versions.
 - **SEC-008/SEC-009:** documented pre-install consent and safe operation of the
   no-auth HTTP transport.
-- **SEC-014/SEC-015:** documented as accepted risk (portfolio/gateway-level
-  controls) in `SECURITY.md`.
+- **SEC-014/SEC-015:** formally accepted as residual risk in the
+  [Risk Acceptance Register](audits/RISK-ACCEPTANCES.md) (RA-001/RA-002) —
+  named owner, decision date, compensating controls and re-evaluation triggers;
+  cross-referenced from `SECURITY.md`.
 - **ARCH-009:** annotations added to the five extension tools (all tools now
   declare `readOnlyHint` and friends).
 - **SEC-022:** SHA-256 tool-hash pinning (`tool_manifest.json`) verified at
