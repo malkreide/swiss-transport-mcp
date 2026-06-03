@@ -22,7 +22,6 @@ Extension APIs (optional – kein Crash wenn Keys fehlen):
 import json
 import logging
 import os
-import sys
 from collections.abc import AsyncIterator
 from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass
@@ -38,6 +37,7 @@ from starlette.middleware.cors import CORSMiddleware
 from . import api_client, ojp_client
 from .api_infrastructure import TransportAPIClient, create_transport_client
 from .formation import get_formation_health, get_train_formation
+from .logging_config import configure_logging
 from .net_security import resolve_ssl_verify
 from .occupancy import get_occupancy_for_route, get_occupancy_forecast
 from .ojp_fare import get_fare_info
@@ -1101,6 +1101,35 @@ async def server_info() -> str:
     }, ensure_ascii=False, indent=2)
 
 
+# ===========================================================================
+# MCP Prompts (ARCH-008: use all three primitives – tools, resources, prompts)
+# ===========================================================================
+
+@mcp.prompt(title="Plan a school / group trip")
+def plan_group_trip(
+    origin: str,
+    destination: str,
+    group_size: str = "20",
+    arrival_time: str = "",
+) -> str:
+    """Guided prompt for planning a Swiss public-transport group outing.
+
+    Produces an instruction that steers the model through the right tools:
+    resolve stops, check disruptions, plan the journey, and consider occupancy.
+    """
+    when = f" arriving by {arrival_time}" if arrival_time else ""
+    return (
+        f"Plan a public-transport trip for a group of {group_size} from "
+        f"'{origin}' to '{destination}'{when} in Switzerland.\n\n"
+        "Please:\n"
+        "1. Use transport_search_stop to resolve both locations to stop IDs.\n"
+        "2. Use transport_trip_plan for the best connection (mind transfers for a group).\n"
+        "3. Use get_transport_disruptions to check for disruptions on the route.\n"
+        "4. Optionally use get_train_occupancy to gauge how full the trains will be.\n"
+        "Summarise the recommended departure, duration, transfers, and any warnings."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -1196,14 +1225,8 @@ def main():
 
     Eselsbrücke: "Stdio für den Laptop, Streamable HTTP für die Cloud."
     """
-    # Logging strikt auf stderr: bei stdio-Transport ist stdout exklusiv
-    # für den JSON-RPC-Protokoll-Stream reserviert. Jeder Log-Output auf
-    # stdout würde den Stream korrumpieren und die MCP-Verbindung killen.
-    logging.basicConfig(
-        stream=sys.stderr,
-        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
-        format="%(asctime)s %(name)s %(levelname)s: %(message)s",
-    )
+    # Logging strikt auf stderr (OBS-004); LOG_FORMAT=json → structured (OBS-003).
+    configure_logging()
 
     transport = _resolve_transport()
 

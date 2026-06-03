@@ -306,6 +306,29 @@ swiss-transport-mcp/
 - **Terms of service:** Data is subject to the ToS of [opentransportdata.swiss](https://opentransportdata.swiss/de/nutzungsbedingungen/). OJP, SIRI-SX, and the CKAN catalogue are published under open licences (ODbL / CC BY 4.0) for non-commercial and research use.
 - **No guarantees:** This server is a community project, not affiliated with the Federal Office of Transport (BAV/OFT) or SBB. Availability depends on upstream APIs.
 
+### Before you install (consent)
+
+Adding this server to your MCP client lets the connected AI model issue Swiss
+public-transport queries on your behalf, using **your** opentransportdata.swiss
+API key, and make outbound HTTPS requests to `opentransportdata.swiss`. Nothing
+is written upstream and no PII is stored, but you should review the tool list
+above and confirm you are comfortable granting that access before configuring
+the server.
+
+### Running the HTTP transport safely (no built-in auth)
+
+The server has **no authentication of its own**. When you run the Streamable
+HTTP transport (`MCP_TRANSPORT=streamable-http`), the MCP SDK issues a
+cryptographically random `Mcp-Session-Id` per session, but there is no user
+identity bound to it. Therefore:
+
+- **Do not expose a no-auth instance directly to the public internet.** Put it
+  behind an authenticating reverse proxy (OAuth2 proxy, mTLS, or your platform's
+  access control), or restrict it to a trusted network.
+- Keep the default `MCP_HOST=127.0.0.1` for local use; only bind `0.0.0.0`
+  inside a controlled container/cloud environment (see Deployment).
+- Scope `MCP_CORS_ORIGINS` to the origins you actually trust.
+
 ---
 
 ## Known Limitations

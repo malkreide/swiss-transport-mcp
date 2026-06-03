@@ -3,6 +3,39 @@
 Alle relevanten Änderungen an diesem Projekt werden hier dokumentiert.
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Security & hardening (MCP best-practice audit)
+
+- **SEC-016:** SSE/HTTP listener now defaults to `127.0.0.1` (NeighborJack fix).
+- **SEC-004/005/021:** HTTPS-enforced egress allow-list (`opentransportdata.swiss`
+  only) and a TLS-verify guard (`TRANSPORT_SSL_VERIFY=false` honoured only in a
+  dev environment via `MCP_ENV`).
+- **SDK-004:** CORS for the HTTP transport, exposing `Mcp-Session-Id`, origins
+  configurable via `MCP_CORS_ORIGINS` (default `https://claude.ai`).
+- **OBS-002:** upstream error bodies are logged to stderr, no longer forwarded
+  to the model.
+
+### Reliability & SDK
+
+- **SCALE-001:** cloud transport migrated from legacy SSE to Streamable HTTP
+  (endpoint `/mcp`); SSE kept as a deprecated fallback.
+- **SDK-001:** FastMCP lifespan with a pooled HTTP client and deterministic
+  teardown; **SDK-002:** typed Pydantic tool outputs; **SDK-003:** Context
+  progress on long-running tools.
+- **OBS-003/004:** logging pinned to stderr with an optional JSON format
+  (`LOG_FORMAT=json`, RFC 5424 severity).
+
+### Tooling, packaging & docs
+
+- **OPS-001:** assertion-based test suite with respx mocking.
+- **SEC-007 / SCALE-004 / SCALE-006:** multi-stage non-root Dockerfile,
+  `.dockerignore`, and `docker-compose.yml` with resource limits.
+- **ARCH-008:** added the `plan_group_trip` prompt (all three MCP primitives).
+- **ARCH-012:** capped `mcp`/`httpx`/`pydantic` to their current major versions.
+- **SEC-008/SEC-009:** documented pre-install consent and safe operation of the
+  no-auth HTTP transport.
+
 ## [0.2.0] – 2026-03-01
 
 ### Erweiterung: 5 neue Tools / Extension: 5 new tools

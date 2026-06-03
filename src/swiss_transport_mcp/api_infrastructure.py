@@ -260,7 +260,11 @@ class TransportAPIClient:
             elif e.response.status_code == 404:
                 raise NotFoundError(f"API '{api_name}': Ressource nicht gefunden (HTTP 404) für {url}")
             else:
-                raise APIError(f"API '{api_name}': HTTP {e.response.status_code} – {e.response.text[:200]}")
+                # OBS-002: log upstream body to stderr, don't surface it.
+                logger.warning(
+                    "API '%s' HTTP %s: %s", api_name, e.response.status_code, e.response.text[:500]
+                )
+                raise APIError(f"API '{api_name}': HTTP {e.response.status_code} from upstream service.") from e
         except httpx.TimeoutException:
             raise APIError(f"API '{api_name}': Timeout nach 30s. Der Server antwortet nicht.")
         except httpx.ConnectError:
@@ -321,7 +325,11 @@ class TransportAPIClient:
             response = await self._client.post(url, content=xml_body, headers=headers)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            raise APIError(f"API '{api_name}': HTTP {e.response.status_code} – {e.response.text[:300]}")
+            # OBS-002: log upstream body to stderr, don't surface it.
+            logger.warning(
+                "API '%s' HTTP %s: %s", api_name, e.response.status_code, e.response.text[:500]
+            )
+            raise APIError(f"API '{api_name}': HTTP {e.response.status_code} from upstream service.") from e
 
         result = response.text
         self._cache.set(api_name, cache_params, result, config.cache_ttl)
