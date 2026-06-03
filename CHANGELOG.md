@@ -39,6 +39,12 @@ All notable changes to this project are documented here.
   no-auth HTTP transport.
 - **SEC-014/SEC-015:** documented as accepted risk (portfolio/gateway-level
   controls) in `SECURITY.md`.
+- **ARCH-009:** annotations added to the five extension tools (all tools now
+  declare `readOnlyHint` and friends).
+- **SEC-022:** SHA-256 tool-hash pinning (`tool_manifest.json`) verified at
+  startup and in CI to detect tool-surface drift / rug-pulls.
+- **SCALE-002/003:** `MCP_STATELESS=1` runs Streamable HTTP statelessly,
+  removing the sticky-load-balancing requirement for horizontal scale-out.
 
 ## [0.2.0] – 2026-03-01
 

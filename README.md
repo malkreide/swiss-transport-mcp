@@ -115,6 +115,7 @@ Try it immediately in Claude Desktop:
 | `MCP_CORS_ORIGINS` | Comma-separated list of browser origins allowed to call the HTTP transport. Use `*` to allow any origin (not recommended). The `Mcp-Session-Id` header is exposed to these origins. | `https://claude.ai` |
 | `LOG_FORMAT` | `json` for structured logs (RFC 5424 severity); anything else for human-readable text. Always written to stderr. | `text` |
 | `OTEL_TRACES_ENABLED` | `1` to enable OpenTelemetry tracing (requires the `otel` extra: `pip install 'swiss-transport-mcp[otel]'`). No-op otherwise. | _(off)_ |
+| `MCP_STATELESS` | `1` to run the Streamable HTTP transport statelessly — no server-side session state, so instances need **no sticky load balancing**. Recommended for horizontal scale-out. | _(off → stateful)_ |
 
 > 🔒 **Egress allow-list:** all outbound requests are restricted to `https://` on `opentransportdata.swiss` hosts. Any other host is refused before a request is sent (SSRF / egress hardening).
 
@@ -185,6 +186,13 @@ The image is a multi-stage build running as a **non-root** user; `docker-compose
 4. In claude.ai under Settings → MCP Servers, add: `https://your-app.onrender.com/mcp`
 
 > 💡 *"stdio for the developer laptop, Streamable HTTP for the cloud."*
+
+**Scaling horizontally:** run with `MCP_STATELESS=1`. In stateless mode the
+server keeps no per-session state, so any instance can serve any request and a
+plain round-robin load balancer suffices — **no sticky sessions / `Mcp-Session-Id`
+affinity required**. If you need stateful streaming instead, route by
+`Mcp-Session-Id` at the edge LB (e.g. HAProxy stick-tables) so each session
+stays pinned to one instance.
 
 > ⚠️ **Binding:** In a network transport the server binds to `127.0.0.1` by
 > default so a locally started server is **not** exposed to your whole network

@@ -26,6 +26,7 @@ tools only query opentransportdata.swiss. Hardening already in place:
 | Secrets | Env-vars only, `.gitignore` guards `.env`, no hardcoded secrets (ARCH-005/SEC-013) |
 | Errors | Upstream bodies logged to stderr, never forwarded to the model (OBS-002) |
 | Stdout | Reserved for the JSON-RPC stream; logging pinned to stderr (OBS-004) |
+| Tool integrity | SHA-256 tool-hash pinning verified at startup + in CI against `tool_manifest.json` (SEC-022) |
 
 See `audits/` for the full report and `CHANGELOG.md` for the hardening history.
 
@@ -47,13 +48,13 @@ read-only and constrained by the egress allow-list above.
 
 ### SEC-015 — Pre-flight tool-poisoning detection
 
-**Status:** accepted risk (portfolio-level).
+**Status:** accepted risk (portfolio-level), with a local guard in place.
 Tool-poisoning (malicious tool descriptions / rug-pulls) is a supply-chain and
-host-side concern. This server's tool definitions are version-controlled, namespace
--prefixed (`transport_*` / `get_transport_*`), and shipped from this repository;
-there is no dynamic/remote tool registration. Detection of poisoned tools across
-servers is again a gateway/host responsibility and is tracked at the portfolio
-level rather than duplicated per server.
+host-side concern. This server's tool definitions are version-controlled and
+shipped from this repository; there is no dynamic/remote tool registration.
+Locally, **SEC-022 tool-hash pinning** (`tool_manifest.json`) detects any drift
+in the tool surface at startup and in CI. Cross-server poisoning detection
+remains a gateway/host responsibility tracked at the portfolio level.
 
 ## Re-evaluation triggers
 
