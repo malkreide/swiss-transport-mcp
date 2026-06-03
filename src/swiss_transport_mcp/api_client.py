@@ -200,7 +200,12 @@ def handle_api_error(e: Exception) -> str:
         elif status == 500:
             return "Error: Server error (500). The opentransportdata.swiss service may be experiencing issues."
         else:
-            return f"Error: HTTP {status} – {e.response.text[:200] if e.response.text else 'No details'}"
+            # OBS-002: do not forward raw upstream response bodies to the LLM
+            # (may leak stacktraces / internal detail). Log it to stderr, return
+            # a generic message.
+            if e.response.text:
+                logger.warning("Upstream HTTP %s: %s", status, e.response.text[:500])
+            return f"Error: HTTP {status} from the upstream service. See server logs for detail."
     elif isinstance(e, httpx.TimeoutException):
         return "Error: Request timed out. The OJP service may be busy – try again in a few seconds."
     elif isinstance(e, ValueError):
