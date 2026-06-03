@@ -152,10 +152,15 @@ For use via **claude.ai in the browser** (e.g. on managed workstations without l
 **Render.com (recommended):**
 1. Push/fork the repository to GitHub
 2. On [render.com](https://render.com): New Web Service → connect GitHub repo
-3. Set start command: `swiss-transport-mcp` with env `MCP_TRANSPORT=sse`
+3. Set start command: `swiss-transport-mcp` with env `MCP_TRANSPORT=sse` **and `MCP_HOST=0.0.0.0`**
 4. In claude.ai under Settings → MCP Servers, add: `https://your-app.onrender.com/sse`
 
 > 💡 *"stdio for the developer laptop, SSE for the browser."*
+
+> ⚠️ **Binding:** In SSE mode the server binds to `127.0.0.1` by default so a
+> locally started server is **not** exposed to your whole network (e.g. public
+> Wi-Fi). Set `MCP_HOST=0.0.0.0` **only** in a container/cloud environment where
+> binding to all interfaces is intended.
 
 ---
 

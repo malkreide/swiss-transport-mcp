@@ -22,6 +22,7 @@ Extension APIs (optional – kein Crash wenn Keys fehlen):
 import json
 import logging
 import os
+import sys
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -941,10 +942,23 @@ def main():
 
     Eselsbrücke: "Stdio für den Laptop, SSE für den Browser."
     """
+    # Logging strikt auf stderr: bei stdio-Transport ist stdout exklusiv
+    # für den JSON-RPC-Protokoll-Stream reserviert. Jeder Log-Output auf
+    # stdout würde den Stream korrumpieren und die MCP-Verbindung killen.
+    logging.basicConfig(
+        stream=sys.stderr,
+        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s %(name)s %(levelname)s: %(message)s",
+    )
+
     transport = os.environ.get("MCP_TRANSPORT", "stdio").lower()
 
     if transport == "sse":
-        host = os.environ.get("MCP_HOST", "0.0.0.0")
+        # Default 127.0.0.1: ein lokal gestarteter Server darf NICHT
+        # automatisch an alle Interfaces binden (NeighborJack-Schutz im
+        # öffentlichen WLAN). Für Container/Cloud explizit MCP_HOST=0.0.0.0
+        # setzen – dort ist das Binding an alle Interfaces gewollt.
+        host = os.environ.get("MCP_HOST", "127.0.0.1")
         port = int(os.environ.get("MCP_PORT", os.environ.get("PORT", "8000")))
         logger.info(f"Starting SSE server on {host}:{port}")
         mcp.run(transport="sse", host=host, port=port)
