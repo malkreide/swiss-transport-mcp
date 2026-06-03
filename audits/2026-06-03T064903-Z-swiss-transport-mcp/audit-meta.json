@@ -1,0 +1,13 @@
+{
+  "audit_meta": {
+    "server_name": "swiss-transport-mcp",
+    "run_id": "2026-06-03T064903-Z-swiss-transport-mcp",
+    "started_at": "2026-06-03T06:49:03.632785+00:00",
+    "timezone_offset": "Z",
+    "skill_version": "1.0.0",
+    "output_dir": "/home/user/swiss-transport-mcp/audits/2026-06-03T064903-Z-swiss-transport-mcp",
+    "catalog_hash": "091f446b27965044ce658a1d5f4b2cabe2b0ab5661dcc1a53b6be8f1f2e093c0",
+    "catalog_dir": "/tmp/mcp-audit-skill/checks"
+  },
+  "agent_runs": []
+}
