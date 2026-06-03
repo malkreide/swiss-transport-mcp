@@ -21,6 +21,7 @@ from typing import Any
 import httpx
 
 from .net_security import resolve_ssl_verify, validate_egress_url
+from .tracing import span
 
 logger = logging.getLogger("swiss-transport-mcp")
 
@@ -244,8 +245,9 @@ class TransportAPIClient:
 
         try:
             config.rate_limit.record()
-            response = await self._client.get(url, params=params, headers=headers)
-            response.raise_for_status()
+            with span("api.get", **{"api.name": api_name}):
+                response = await self._client.get(url, params=params, headers=headers)
+                response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 raise RateLimitError(
@@ -322,8 +324,9 @@ class TransportAPIClient:
         try:
             config.rate_limit.record()
             url = validate_egress_url(config.base_url)
-            response = await self._client.post(url, content=xml_body, headers=headers)
-            response.raise_for_status()
+            with span("api.post_xml", **{"api.name": api_name}):
+                response = await self._client.post(url, content=xml_body, headers=headers)
+                response.raise_for_status()
         except httpx.HTTPStatusError as e:
             # OBS-002: log upstream body to stderr, don't surface it.
             logger.warning(

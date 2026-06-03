@@ -25,6 +25,8 @@ All notable changes to this project are documented here.
   progress on long-running tools.
 - **OBS-003/004:** logging pinned to stderr with an optional JSON format
   (`LOG_FORMAT=json`, RFC 5424 severity).
+- **OBS-006:** opt-in OpenTelemetry tracing (`otel` extra +
+  `OTEL_TRACES_ENABLED=1`); spans around upstream HTTP calls, no-op by default.
 
 ### Tooling, packaging & docs
 
@@ -35,6 +37,8 @@ All notable changes to this project are documented here.
 - **ARCH-012:** capped `mcp`/`httpx`/`pydantic` to their current major versions.
 - **SEC-008/SEC-009:** documented pre-install consent and safe operation of the
   no-auth HTTP transport.
+- **SEC-014/SEC-015:** documented as accepted risk (portfolio/gateway-level
+  controls) in `SECURITY.md`.
 
 ## [0.2.0] – 2026-03-01
 

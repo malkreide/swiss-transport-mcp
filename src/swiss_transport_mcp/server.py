@@ -42,6 +42,7 @@ from .net_security import resolve_ssl_verify
 from .occupancy import get_occupancy_for_route, get_occupancy_forecast
 from .ojp_fare import get_fare_info
 from .siri_sx import get_disruptions
+from .tracing import configure_tracing
 
 logger = logging.getLogger("swiss-transport-mcp")
 
@@ -1227,6 +1228,8 @@ def main():
     """
     # Logging strikt auf stderr (OBS-004); LOG_FORMAT=json → structured (OBS-003).
     configure_logging()
+    # Optional OpenTelemetry tracing (OBS-006) – no-op unless OTEL_TRACES_ENABLED.
+    configure_tracing()
 
     transport = _resolve_transport()
 
