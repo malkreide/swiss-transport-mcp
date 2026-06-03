@@ -13,6 +13,8 @@ from typing import Any
 
 import httpx
 
+from .net_security import resolve_ssl_verify, validate_egress_url
+
 logger = logging.getLogger("swiss-transport-mcp")
 
 # API endpoints
@@ -74,7 +76,7 @@ async def ojp_request(xml_body: str, version: str = "v2") -> str:
         httpx.HTTPStatusError: On HTTP errors
         ValueError: On missing API key
     """
-    url = OJP_V2_URL if version == "v2" else OJP_V1_URL
+    url = validate_egress_url(OJP_V2_URL if version == "v2" else OJP_V1_URL)
     api_key = _get_ojp_key()
 
     headers = {
@@ -82,7 +84,7 @@ async def ojp_request(xml_body: str, version: str = "v2") -> str:
         "Authorization": f"Bearer {api_key}",
     }
 
-    verify = os.environ.get("TRANSPORT_SSL_VERIFY", "true").lower() != "false"
+    verify = resolve_ssl_verify()
     async with httpx.AsyncClient(timeout=OJP_TIMEOUT, verify=verify) as client:
         response = await client.post(url, content=xml_body, headers=headers)
         response.raise_for_status()
@@ -108,7 +110,9 @@ async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dic
         ValueError: On missing API key or CKAN errors
     """
     ckan_url = os.environ.get("TRANSPORT_CKAN_URL", CKAN_API_URL)
-    url = f"{ckan_url}/{action}"
+    # Validate the (possibly overridden) base URL against the egress allow-list
+    # so TRANSPORT_CKAN_URL cannot redirect traffic to an arbitrary host.
+    url = validate_egress_url(f"{ckan_url}/{action}")
 
     # CKAN may work without auth on some endpoints
     headers = {}
@@ -118,7 +122,7 @@ async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dic
     except ValueError:
         logger.info("No CKAN API key configured – trying without auth")
 
-    verify = os.environ.get("TRANSPORT_SSL_VERIFY", "true").lower() != "false"
+    verify = resolve_ssl_verify()
     async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT, verify=verify) as client:
         response = await client.get(url, params=params or {}, headers=headers)
 

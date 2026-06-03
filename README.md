@@ -105,6 +105,16 @@ Try it immediately in Claude Desktop:
 
 > APIs without a key are silently disabled – the server starts fine with just the 6 core tools.
 
+**Operational / security variables:**
+
+| Variable | Effect | Default |
+|---|---|---|
+| `MCP_ENV` / `ENV` | Process environment. Must be `dev`/`development`/`local`/`test` to allow disabling TLS verification. | _(unset → production)_ |
+| `TRANSPORT_SSL_VERIFY` | Set to `false` to disable TLS certificate verification. **Honoured only when `MCP_ENV` marks a dev environment** – otherwise the request is ignored and verification stays on. | `true` |
+| `TRANSPORT_CKAN_URL` | Override the CKAN base URL. Must stay on the egress allow-list (`*.opentransportdata.swiss`); off-site overrides are refused. | `https://api.opentransportdata.swiss/ckan-api` |
+
+> 🔒 **Egress allow-list:** all outbound requests are restricted to `https://` on `opentransportdata.swiss` hosts. Any other host is refused before a request is sent (SSRF / egress hardening).
+
 ### Claude Desktop Configuration
 
 **Minimal (core tools only):**

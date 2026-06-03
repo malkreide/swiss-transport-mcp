@@ -16,6 +16,7 @@ from swiss_transport_mcp.api_client import (
     handle_api_error,
     ojp_request,
 )
+from swiss_transport_mcp.net_security import EgressNotAllowedError
 
 # ---------------------------------------------------------------------------
 # ojp_request (XML POST)
@@ -84,11 +85,21 @@ async def test_ckan_request_unsuccessful_payload_raises(monkeypatch):
         await ckan_request("package_search", {"q": "x"})
 
 
-@respx.mock
-async def test_ckan_request_honours_custom_base_url(monkeypatch):
+async def test_ckan_request_rejects_offsite_base_url_override(monkeypatch):
+    # SEC-021: TRANSPORT_CKAN_URL must not be able to redirect egress to an
+    # arbitrary host. A non-allowlisted override is refused before any request.
     monkeypatch.setenv("TRANSPORT_API_KEY", "k")
     monkeypatch.setenv("TRANSPORT_CKAN_URL", "https://example.test/ckan")
-    route = respx.get("https://example.test/ckan/package_list").mock(
+    with pytest.raises(EgressNotAllowedError):
+        await ckan_request("package_list")
+
+
+@respx.mock
+async def test_ckan_request_allows_onsite_base_url_override(monkeypatch):
+    # An override that stays on an allowlisted host is permitted.
+    monkeypatch.setenv("TRANSPORT_API_KEY", "k")
+    monkeypatch.setenv("TRANSPORT_CKAN_URL", "https://api.opentransportdata.swiss/ckan-api")
+    route = respx.get("https://api.opentransportdata.swiss/ckan-api/package_list").mock(
         return_value=httpx.Response(200, json={"success": True, "result": []})
     )
     await ckan_request("package_list")

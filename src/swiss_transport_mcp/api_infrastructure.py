@@ -20,6 +20,8 @@ from typing import Any
 
 import httpx
 
+from .net_security import resolve_ssl_verify, validate_egress_url
+
 logger = logging.getLogger("swiss-transport-mcp")
 
 
@@ -178,11 +180,15 @@ class TransportAPIClient:
         self._client = httpx.AsyncClient(
             timeout=30.0,
             follow_redirects=True,  # Wichtig für GTFS-RT!
+            verify=resolve_ssl_verify(),
             headers={"User-Agent": "swiss-transport-mcp/1.0"}
         )
 
     def register_api(self, config: APIConfig):
         """Registriert eine neue API-Konfiguration."""
+        # Fail fast: reject any API whose base_url is not on the egress
+        # allow-list / not https before it can ever be called (SEC-021).
+        validate_egress_url(config.base_url)
         self._configs[config.name] = config
         logger.info(f"API registriert: {config.name} → {config.base_url}")
 
@@ -209,7 +215,7 @@ class TransportAPIClient:
             raise ValueError(f"API '{api_name}' nicht registriert. Hast du den API-Key konfiguriert?")
 
         params = params or {}
-        url = f"{config.base_url}{path}"
+        url = validate_egress_url(f"{config.base_url}{path}")
 
         # 1. Cache prüfen
         if use_cache:
@@ -311,7 +317,8 @@ class TransportAPIClient:
 
         try:
             config.rate_limit.record()
-            response = await self._client.post(config.base_url, content=xml_body, headers=headers)
+            url = validate_egress_url(config.base_url)
+            response = await self._client.post(url, content=xml_body, headers=headers)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             raise APIError(f"API '{api_name}': HTTP {e.response.status_code} – {e.response.text[:300]}")
