@@ -9,6 +9,8 @@ Both require Bearer token authentication from the API-Manager.
 
 import logging
 import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
@@ -25,6 +27,42 @@ CKAN_API_URL = "https://api.opentransportdata.swiss/ckan-api"
 # Timeouts
 DEFAULT_TIMEOUT = 30.0
 OJP_TIMEOUT = 45.0  # OJP trip calculations can take longer
+
+
+# ---------------------------------------------------------------------------
+# Pooled client (SDK-001)
+# ---------------------------------------------------------------------------
+# When the server lifespan installs a shared httpx client, OJP/CKAN calls reuse
+# it (connection pooling, single TLS-verify decision). Without it — e.g. in unit
+# tests calling these functions directly — each call falls back to a short-lived
+# client, which keeps the functions usable standalone and loop-safe.
+
+_shared_client: httpx.AsyncClient | None = None
+
+
+def set_shared_client(client: httpx.AsyncClient | None) -> None:
+    """Install (or replace) the pooled client used for all OJP/CKAN calls."""
+    global _shared_client
+    _shared_client = client
+
+
+def clear_shared_client() -> None:
+    """Remove the pooled client; subsequent calls fall back to throwaway clients."""
+    set_shared_client(None)
+
+
+@asynccontextmanager
+async def _http_client(timeout: float) -> AsyncIterator[httpx.AsyncClient]:
+    """Yield the pooled client if installed, else a short-lived one.
+
+    The pooled client is owned by the server lifespan and must NOT be closed
+    here; the fallback client is closed on exit.
+    """
+    if _shared_client is not None:
+        yield _shared_client
+    else:
+        async with httpx.AsyncClient(timeout=timeout, verify=resolve_ssl_verify()) as client:
+            yield client
 
 
 def _get_api_key(env_var: str) -> str | None:
@@ -84,9 +122,8 @@ async def ojp_request(xml_body: str, version: str = "v2") -> str:
         "Authorization": f"Bearer {api_key}",
     }
 
-    verify = resolve_ssl_verify()
-    async with httpx.AsyncClient(timeout=OJP_TIMEOUT, verify=verify) as client:
-        response = await client.post(url, content=xml_body, headers=headers)
+    async with _http_client(OJP_TIMEOUT) as client:
+        response = await client.post(url, content=xml_body, headers=headers, timeout=OJP_TIMEOUT)
         response.raise_for_status()
         return response.text
 
@@ -122,9 +159,8 @@ async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dic
     except ValueError:
         logger.info("No CKAN API key configured – trying without auth")
 
-    verify = resolve_ssl_verify()
-    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT, verify=verify) as client:
-        response = await client.get(url, params=params or {}, headers=headers)
+    async with _http_client(DEFAULT_TIMEOUT) as client:
+        response = await client.get(url, params=params or {}, headers=headers, timeout=DEFAULT_TIMEOUT)
 
         if response.status_code == 403:
             raise ValueError(

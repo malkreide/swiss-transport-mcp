@@ -23,14 +23,19 @@ import json
 import logging
 import os
 import sys
+from collections.abc import AsyncIterator
+from contextlib import AsyncExitStack, asynccontextmanager
+from dataclasses import dataclass
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+import httpx
+from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import api_client, ojp_client
-from .api_infrastructure import create_transport_client
+from .api_infrastructure import TransportAPIClient, create_transport_client
 from .formation import get_formation_health, get_train_formation
+from .net_security import resolve_ssl_verify
 from .occupancy import get_occupancy_for_route, get_occupancy_forecast
 from .ojp_fare import get_fare_info
 from .siri_sx import get_disruptions
@@ -40,6 +45,81 @@ logger = logging.getLogger("swiss-transport-mcp")
 # ---------------------------------------------------------------------------
 # Server initialization
 # ---------------------------------------------------------------------------
+
+# ===========================================================================
+# Extension API Client + server lifespan (SDK-001)
+# ===========================================================================
+
+_ext_client: TransportAPIClient | None = None
+
+
+def _build_ext_client() -> TransportAPIClient:
+    """Build the extension-API client from the configured keys.
+
+    Missing keys simply leave that API unregistered – the tools return a clean
+    "not configured" message instead of crashing.
+    """
+    return create_transport_client(
+        siri_sx_key=os.environ.get("SIRI_SX_API_KEY"),
+        occupancy_key=os.environ.get("OCCUPANCY_API_KEY"),
+        formation_key=os.environ.get("FORMATION_API_KEY"),
+        ojp_fare_key=os.environ.get("OJP_FARE_API_KEY"),
+    )
+
+
+def _get_ext_client() -> TransportAPIClient:
+    """Return the lifespan-managed extension client.
+
+    Falls back to a lazily-built singleton if the lifespan has not run (e.g. a
+    tool invoked directly in a unit test). The lifespan owns teardown.
+    """
+    global _ext_client
+    if _ext_client is None:
+        _ext_client = _build_ext_client()
+    return _ext_client
+
+
+@dataclass
+class AppContext:
+    """Shared resources made available to tools via the request context."""
+
+    ext_client: TransportAPIClient
+
+
+@asynccontextmanager
+async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
+    """Create and tear down shared resources for the server's lifetime.
+
+    Closes the gap from audit finding SDK-001: previously the extension
+    client's httpx session was never closed and every OJP/CKAN call opened a
+    throwaway client. Now an ``AsyncExitStack`` owns:
+
+    - a pooled httpx client for the OJP/CKAN path (installed via
+      ``api_client.set_shared_client``), and
+    - the extension ``TransportAPIClient``,
+
+    and both are closed deterministically on shutdown.
+    """
+    global _ext_client
+    async with AsyncExitStack() as stack:
+        # Pooled client for the OJP/CKAN module functions.
+        http_client = httpx.AsyncClient(
+            verify=resolve_ssl_verify(),
+            headers={"User-Agent": "swiss-transport-mcp/1.0"},
+        )
+        stack.push_async_callback(http_client.aclose)
+        api_client.set_shared_client(http_client)
+        stack.callback(api_client.clear_shared_client)
+
+        # Extension API client (disruptions / occupancy / fare / formation).
+        _ext_client = _build_ext_client()
+        stack.push_async_callback(_ext_client.close)
+        stack.callback(lambda: globals().__setitem__("_ext_client", None))
+
+        logger.info("Server lifespan started: shared HTTP clients ready")
+        yield AppContext(ext_client=_ext_client)
+        logger.info("Server lifespan shutting down: closing shared HTTP clients")
+
 
 mcp = FastMCP(
     "swiss_transport_mcp",
@@ -53,32 +133,8 @@ mcp = FastMCP(
         "Extension tools (disruptions, occupancy, prices, formations) require "
         "separate API keys – they return helpful messages if not configured."
     ),
+    lifespan=app_lifespan,
 )
-
-
-# ===========================================================================
-# Extension API Client (lazy initialization)
-# ===========================================================================
-
-_ext_client = None
-
-
-def _get_ext_client():
-    """Lazy Initialization des Extension-API-Clients.
-
-    Warum lazy? Weil der MCP-Server beim Start schnell bereit sein muss.
-    Die API-Konfiguration wird erst geprüft, wenn ein Tool tatsächlich
-    aufgerufen wird. Fehlende Keys → Tool gibt saubere Fehlermeldung.
-    """
-    global _ext_client
-    if _ext_client is None:
-        _ext_client = create_transport_client(
-            siri_sx_key=os.environ.get("SIRI_SX_API_KEY"),
-            occupancy_key=os.environ.get("OCCUPANCY_API_KEY"),
-            formation_key=os.environ.get("FORMATION_API_KEY"),
-            ojp_fare_key=os.environ.get("OJP_FARE_API_KEY"),
-        )
-    return _ext_client
 
 
 def _check_api(api_name: str, env_var: str) -> str | None:
@@ -375,7 +431,7 @@ async def transport_nearby_stops(params: SearchStopByCoordInput) -> str:
         "openWorldHint": True,
     },
 )
-async def transport_departures(params: DeparturesInput) -> str:
+async def transport_departures(params: DeparturesInput, ctx: Context) -> str:
     """Get upcoming departures or arrivals at a Swiss public transport stop.
 
     Shows real-time information including delays when available.
@@ -388,6 +444,7 @@ async def transport_departures(params: DeparturesInput) -> str:
         real-time time, delay, and platform.
     """
     try:
+        await ctx.info(f"Fetching {params.event_type}s for stop {params.stop_id}")
         xml_request = ojp_client.build_stop_event_request(
             stop_ref=params.stop_id,
             stop_name=params.stop_name,
@@ -435,7 +492,7 @@ async def transport_departures(params: DeparturesInput) -> str:
         "openWorldHint": True,
     },
 )
-async def transport_trip_plan(params: TripPlanInput) -> str:
+async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> str:
     """Plan a journey between two locations in Switzerland.
 
     Works like the SBB app: enter origin and destination (stop IDs or
@@ -450,6 +507,7 @@ async def transport_trip_plan(params: TripPlanInput) -> str:
         total duration, number of transfers, and transport modes used.
     """
     try:
+        await ctx.info(f"Planning trip {params.origin} → {params.destination}")
         xml_request = ojp_client.build_trip_request(
             origin_ref=params.origin,
             destination_ref=params.destination,
