@@ -1,0 +1,13 @@
+{
+  "check_transport_api_status": "dae5c31f91562bee8338b97e35d5f8c8901f7a1f6b2c6a5854dca1a67523c29d",
+  "get_ticket_price": "eb757f5dc41ee7bf6160a721ba6825e0a7207896758eeefe444ceac7cbb33c04",
+  "get_train_composition": "be9741d2c596625889ae38f55663955d2591c7ae6ee7d230f416407cacbf38b0",
+  "get_train_occupancy": "21fdec20e0f8ad2e6cc20e606a7dc249a4a9a762b6aa77103e57139bb4134bde",
+  "get_transport_disruptions": "6ccd36fdc305bf9b1180c829ae04f7f4da5369306ce67cc4edf25990434ebd77",
+  "transport_departures": "12bd3e7a57d4a8e07b0a1ef8461f2a2e9e6da94c22485aaef7c1a7057dc6921e",
+  "transport_get_dataset": "5acb9168cb4a3bdd8db188d693f7fd766b0734b5009fc219b59b712775e49bf8",
+  "transport_nearby_stops": "a680e4c87e6b096416369534217c2a2359f2f44b3e2568248a276300774f453c",
+  "transport_search_datasets": "8f73ffff6fa3155dacd3ac952b6e4539be59b79b1011bd80f72dbb0d7657dd31",
+  "transport_search_stop": "6b4b075e979cd1c2beb16cb76ea37219feed96c467dec49330235ee7f22a5be8",
+  "transport_trip_plan": "383be49303cdf41afb1863f659b13d9d5c955366f463b30d0581ce738f1fb834"
+}

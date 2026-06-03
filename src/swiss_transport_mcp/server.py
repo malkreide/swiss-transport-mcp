@@ -42,6 +42,7 @@ from .net_security import resolve_ssl_verify
 from .occupancy import get_occupancy_for_route, get_occupancy_forecast
 from .ojp_fare import get_fare_info
 from .siri_sx import get_disruptions
+from .tool_integrity import check_tools_against_manifest
 from .tracing import configure_tracing
 
 logger = logging.getLogger("swiss-transport-mcp")
@@ -119,6 +120,9 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         _ext_client = _build_ext_client()
         stack.push_async_callback(_ext_client.close)
         stack.callback(lambda: globals().__setitem__("_ext_client", None))
+
+        # SEC-022: verify the live tool surface against the pinned manifest.
+        check_tools_against_manifest(await server.list_tools())
 
         logger.info("Server lifespan started: shared HTTP clients ready")
         yield AppContext(ext_client=_ext_client)
@@ -778,7 +782,15 @@ async def transport_get_dataset(params: DatasetDetailInput) -> DatasetDetailResu
 # Tool 7: Störungsmeldungen (SIRI-SX)
 # ---------------------------------------------------------------------------
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Current Disruptions (SIRI-SX)",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False,  # live disruption feed changes over time
+        "openWorldHint": True,
+    },
+)
 async def get_transport_disruptions(
     filter_text: str = "",
     language: str = "DE",
@@ -819,7 +831,15 @@ async def get_transport_disruptions(
 # Tool 8: Belegungsprognose
 # ---------------------------------------------------------------------------
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Train Occupancy Forecast",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False,  # forecast updates over time
+        "openWorldHint": True,
+    },
+)
 async def get_train_occupancy(
     train_number: str = "",
     departure_station: str = "",
@@ -886,7 +906,15 @@ async def get_train_occupancy(
 # Tool 9: OJP Fare Preisauskunft
 # ---------------------------------------------------------------------------
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Ticket Price (OJP Fare)",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,  # fares are stable intra-day
+        "openWorldHint": True,
+    },
+)
 async def get_ticket_price(
     origin: str,
     destination: str,
@@ -935,7 +963,15 @@ async def get_ticket_price(
 # Tool 10: Zugformation
 # ---------------------------------------------------------------------------
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Train Formation",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,  # composition stable for a given train/day
+        "openWorldHint": True,
+    },
+)
 async def get_train_composition(
     train_number: str,
     railway_company: str = "SBBP",
@@ -989,7 +1025,15 @@ async def get_train_composition(
 # Bonus-Tool: Systemstatus aller APIs
 # ===========================================================================
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "API Status Check",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False,  # reflects live connectivity
+        "openWorldHint": True,
+    },
+)
 async def check_transport_api_status() -> str:
     """Prüft den Verbindungsstatus aller konfigurierten Transport-APIs.
 
@@ -1171,6 +1215,17 @@ def _resolve_http_bind(env: dict[str, str] | None = None) -> tuple[str, int]:
     return host, port
 
 
+def _resolve_stateless(env: dict[str, str] | None = None) -> bool:
+    """Whether to run Streamable HTTP statelessly (SCALE-002/003).
+
+    Enabled with ``MCP_STATELESS=1``. Stateless mode keeps no per-session state
+    server-side, so a load balancer can route any request to any instance
+    without sticky sessions / ``Mcp-Session-Id`` affinity.
+    """
+    env = os.environ if env is None else env
+    return env.get("MCP_STATELESS", "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def _resolve_cors_origins(env: dict[str, str] | None = None) -> list[str]:
     """Resolve the allowed CORS origins for browser clients (SDK-004).
 
@@ -1243,6 +1298,16 @@ def main():
             path = mcp.settings.sse_path
         else:
             path = mcp.settings.streamable_http_path
+            # SCALE-002/003: stateless mode removes server-side session state,
+            # so instances need no sticky load balancing / session-affinity
+            # routing — any instance can serve any request. Must be set before
+            # the app is built.
+            if _resolve_stateless():
+                mcp.settings.stateless_http = True
+                logger.info(
+                    "Streamable HTTP in STATELESS mode: no sticky LB / "
+                    "Mcp-Session-Id edge routing required for horizontal scale-out."
+                )
         logger.info(
             f"Starting {transport} server on http://{host}:{port}{path} "
             f"(CORS origins: {origins})"
