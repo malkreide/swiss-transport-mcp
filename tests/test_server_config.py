@@ -13,7 +13,8 @@ from swiss_transport_mcp.server import (
     SearchStopByCoordInput,
     SearchStopInput,
     TripPlanInput,
-    _resolve_sse_bind,
+    _resolve_http_bind,
+    _resolve_transport,
 )
 
 SRC_DIR = Path(server.__file__).parent
@@ -68,24 +69,46 @@ def test_trip_requires_both_endpoints():
 
 
 # ---------------------------------------------------------------------------
-# SEC-016 — SSE listener must default to loopback
+# SEC-016 — network listener must default to loopback
 # ---------------------------------------------------------------------------
 
-def test_sse_bind_defaults_to_loopback():
-    host, port = _resolve_sse_bind(env={})
+def test_http_bind_defaults_to_loopback():
+    host, port = _resolve_http_bind(env={})
     assert host == "127.0.0.1"
     assert port == 8000
 
 
-def test_sse_bind_respects_explicit_host_for_containers():
-    host, _ = _resolve_sse_bind(env={"MCP_HOST": "0.0.0.0"})
+def test_http_bind_respects_explicit_host_for_containers():
+    host, _ = _resolve_http_bind(env={"MCP_HOST": "0.0.0.0"})
     assert host == "0.0.0.0"
 
 
-def test_sse_bind_port_from_env_and_platform_port():
-    assert _resolve_sse_bind(env={"MCP_PORT": "9000"})[1] == 9000
+def test_http_bind_port_from_env_and_platform_port():
+    assert _resolve_http_bind(env={"MCP_PORT": "9000"})[1] == 9000
     # Cloud platforms inject PORT; honoured as fallback.
-    assert _resolve_sse_bind(env={"PORT": "10000"})[1] == 10000
+    assert _resolve_http_bind(env={"PORT": "10000"})[1] == 10000
+
+
+# ---------------------------------------------------------------------------
+# SCALE-001 — transport resolution (Streamable HTTP is the cloud default)
+# ---------------------------------------------------------------------------
+
+def test_transport_defaults_to_stdio():
+    assert _resolve_transport(env={}) == "stdio"
+
+
+@pytest.mark.parametrize("value", ["http", "streamable-http", "streamable_http", "HTTP"])
+def test_transport_http_aliases_map_to_streamable_http(value):
+    assert _resolve_transport(env={"MCP_TRANSPORT": value}) == "streamable-http"
+
+
+def test_transport_sse_preserved_for_legacy():
+    assert _resolve_transport(env={"MCP_TRANSPORT": "sse"}) == "sse"
+
+
+def test_transport_unknown_passed_through_for_main_to_handle():
+    # main() logs an error and falls back to stdio for unknown values.
+    assert _resolve_transport(env={"MCP_TRANSPORT": "carrier-pigeon"}) == "carrier-pigeon"
 
 
 # ---------------------------------------------------------------------------

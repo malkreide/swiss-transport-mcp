@@ -1102,8 +1102,30 @@ async def server_info() -> str:
 # Entry point
 # ---------------------------------------------------------------------------
 
-def _resolve_sse_bind(env: dict[str, str] | None = None) -> tuple[str, int]:
-    """Resolve (host, port) for the SSE listener from environment.
+# Transport aliases → canonical FastMCP transport names.
+_TRANSPORT_ALIASES = {
+    "http": "streamable-http",
+    "streamable_http": "streamable-http",
+    "streamablehttp": "streamable-http",
+}
+# Transports that bind a network listener (need host/port).
+_NETWORK_TRANSPORTS = frozenset({"streamable-http", "sse"})
+
+
+def _resolve_transport(env: dict[str, str] | None = None) -> str:
+    """Resolve the canonical transport name from MCP_TRANSPORT.
+
+    Defaults to ``stdio``. Accepts ``http``/``streamable_http`` as aliases for
+    ``streamable-http`` (the recommended cloud transport). ``sse`` is still
+    accepted but deprecated.
+    """
+    env = os.environ if env is None else env
+    raw = env.get("MCP_TRANSPORT", "stdio").strip().lower()
+    return _TRANSPORT_ALIASES.get(raw, raw)
+
+
+def _resolve_http_bind(env: dict[str, str] | None = None) -> tuple[str, int]:
+    """Resolve (host, port) for a network transport from environment.
 
     Default host is 127.0.0.1: a locally started server must NOT bind to all
     interfaces automatically (NeighborJack protection on public Wi-Fi). For
@@ -1120,10 +1142,11 @@ def main():
     """Run the MCP server.
 
     Transport mode is controlled by environment variables:
-    - MCP_TRANSPORT=sse  → HTTP/SSE for cloud deployment (Render, Railway)
+    - MCP_TRANSPORT=streamable-http (or "http") → recommended cloud transport
+    - MCP_TRANSPORT=sse → legacy HTTP/SSE (deprecated)
     - MCP_TRANSPORT=stdio (default) → local subprocess for Claude Desktop
 
-    Eselsbrücke: "Stdio für den Laptop, SSE für den Browser."
+    Eselsbrücke: "Stdio für den Laptop, Streamable HTTP für die Cloud."
     """
     # Logging strikt auf stderr: bei stdio-Transport ist stdout exklusiv
     # für den JSON-RPC-Protokoll-Stream reserviert. Jeder Log-Output auf
@@ -1134,13 +1157,31 @@ def main():
         format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     )
 
-    transport = os.environ.get("MCP_TRANSPORT", "stdio").lower()
+    transport = _resolve_transport()
 
-    if transport == "sse":
-        host, port = _resolve_sse_bind()
-        logger.info(f"Starting SSE server on {host}:{port}")
-        mcp.run(transport="sse", host=host, port=port)
+    if transport in _NETWORK_TRANSPORTS:
+        # host/port are read from settings by FastMCP – run() itself does not
+        # take them as arguments.
+        host, port = _resolve_http_bind()
+        mcp.settings.host = host
+        mcp.settings.port = port
+        if transport == "sse":
+            logger.warning(
+                "MCP_TRANSPORT=sse is deprecated; use 'streamable-http' (or 'http')."
+            )
+            path = mcp.settings.sse_path
+        else:
+            path = mcp.settings.streamable_http_path
+        logger.info(f"Starting {transport} server on http://{host}:{port}{path}")
+        mcp.run(transport=transport)
+    elif transport == "stdio":
+        mcp.run()
     else:
+        logger.error(
+            "Unknown MCP_TRANSPORT=%r; falling back to stdio. "
+            "Valid values: stdio, streamable-http (http), sse.",
+            transport,
+        )
         mcp.run()
 
 

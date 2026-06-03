@@ -1,0 +1,30 @@
+# Keep the build context (and image layers) small and secret-free.
+.git
+.github
+.gitignore
+.dockerignore
+audits/
+tests/
+docs/
+*.md
+!README.md
+
+# Secrets / local config
+.env
+.env.*
+*.key
+secrets.*
+
+# Python caches / build artefacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/

@@ -155,22 +155,39 @@ Try it immediately in Claude Desktop:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-### Cloud Deployment (SSE for browser access)
+### Cloud Deployment (Streamable HTTP)
 
-For use via **claude.ai in the browser** (e.g. on managed workstations without local software):
+For use via **claude.ai in the browser** (e.g. on managed workstations without local software). The cloud transport is **Streamable HTTP** (`MCP_TRANSPORT=streamable-http`, endpoint `/mcp`). SSE (`/sse`) is still supported but **deprecated**.
 
-**Render.com (recommended):**
+| `MCP_TRANSPORT` | Use | Endpoint |
+|---|---|---|
+| `stdio` (default) | Local Claude Desktop subprocess | – |
+| `streamable-http` (or `http`) | Cloud / container (recommended) | `/mcp` |
+| `sse` | Legacy browser transport (deprecated) | `/sse` |
+
+**Docker (recommended):**
+
+```bash
+# Build + run with explicit resource limits (see docker-compose.yml)
+TRANSPORT_API_KEY=xxx docker compose up --build
+# → http://127.0.0.1:8000/mcp
+```
+
+The image is a multi-stage build running as a **non-root** user; `docker-compose.yml` adds `read_only`, `no-new-privileges` and memory/CPU/PID limits.
+
+**Render.com:**
 1. Push/fork the repository to GitHub
-2. On [render.com](https://render.com): New Web Service → connect GitHub repo
-3. Set start command: `swiss-transport-mcp` with env `MCP_TRANSPORT=sse` **and `MCP_HOST=0.0.0.0`**
-4. In claude.ai under Settings → MCP Servers, add: `https://your-app.onrender.com/sse`
+2. On [render.com](https://render.com): New Web Service → connect GitHub repo (Docker runtime)
+3. Set env `MCP_TRANSPORT=streamable-http` **and `MCP_HOST=0.0.0.0`**
+4. In claude.ai under Settings → MCP Servers, add: `https://your-app.onrender.com/mcp`
 
-> 💡 *"stdio for the developer laptop, SSE for the browser."*
+> 💡 *"stdio for the developer laptop, Streamable HTTP for the cloud."*
 
-> ⚠️ **Binding:** In SSE mode the server binds to `127.0.0.1` by default so a
-> locally started server is **not** exposed to your whole network (e.g. public
-> Wi-Fi). Set `MCP_HOST=0.0.0.0` **only** in a container/cloud environment where
-> binding to all interfaces is intended.
+> ⚠️ **Binding:** In a network transport the server binds to `127.0.0.1` by
+> default so a locally started server is **not** exposed to your whole network
+> (e.g. public Wi-Fi). Set `MCP_HOST=0.0.0.0` **only** in a container/cloud
+> environment where binding to all interfaces is intended (the Docker image
+> does this for you).
 
 ---
 
