@@ -113,6 +113,8 @@ Try it immediately in Claude Desktop:
 | `TRANSPORT_SSL_VERIFY` | Set to `false` to disable TLS certificate verification. **Honoured only when `MCP_ENV` marks a dev environment** – otherwise the request is ignored and verification stays on. | `true` |
 | `TRANSPORT_CKAN_URL` | Override the CKAN base URL. Must stay on the egress allow-list (`*.opentransportdata.swiss`); off-site overrides are refused. | `https://api.opentransportdata.swiss/ckan-api` |
 | `MCP_CORS_ORIGINS` | Comma-separated list of browser origins allowed to call the HTTP transport. Use `*` to allow any origin (not recommended). The `Mcp-Session-Id` header is exposed to these origins. | `https://claude.ai` |
+| `LOG_FORMAT` | `json` for structured logs (RFC 5424 severity); anything else for human-readable text. Always written to stderr. | `text` |
+| `OTEL_TRACES_ENABLED` | `1` to enable OpenTelemetry tracing (requires the `otel` extra: `pip install 'swiss-transport-mcp[otel]'`). No-op otherwise. | _(off)_ |
 
 > 🔒 **Egress allow-list:** all outbound requests are restricted to `https://` on `opentransportdata.swiss` hosts. Any other host is refused before a request is sent (SSRF / egress hardening).
 
@@ -328,6 +330,9 @@ identity bound to it. Therefore:
 - Keep the default `MCP_HOST=127.0.0.1` for local use; only bind `0.0.0.0`
   inside a controlled container/cloud environment (see Deployment).
 - Scope `MCP_CORS_ORIGINS` to the origins you actually trust.
+
+See [`SECURITY.md`](SECURITY.md) for the full security posture and the
+accepted-risk decisions (gateway-level controls).
 
 ---
 

@@ -43,6 +43,11 @@ dev = [
     "respx>=0.21.0",
     "ruff>=0.4.0",
 ]
+# OBS-006: opt-in OpenTelemetry tracing. Enable at runtime with
+# OTEL_TRACES_ENABLED=1. Without this extra, tracing is a no-op.
+otel = [
+    "opentelemetry-sdk>=1.20.0,<2.0.0",
+]
 
 [project.scripts]
 swiss-transport-mcp = "swiss_transport_mcp.server:main"
