@@ -933,6 +933,20 @@ async def server_info() -> str:
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _resolve_sse_bind(env: dict[str, str] | None = None) -> tuple[str, int]:
+    """Resolve (host, port) for the SSE listener from environment.
+
+    Default host is 127.0.0.1: a locally started server must NOT bind to all
+    interfaces automatically (NeighborJack protection on public Wi-Fi). For
+    container/cloud deployment set MCP_HOST=0.0.0.0 explicitly – there binding
+    to all interfaces is intended.
+    """
+    env = os.environ if env is None else env
+    host = env.get("MCP_HOST", "127.0.0.1")
+    port = int(env.get("MCP_PORT", env.get("PORT", "8000")))
+    return host, port
+
+
 def main():
     """Run the MCP server.
 
@@ -954,12 +968,7 @@ def main():
     transport = os.environ.get("MCP_TRANSPORT", "stdio").lower()
 
     if transport == "sse":
-        # Default 127.0.0.1: ein lokal gestarteter Server darf NICHT
-        # automatisch an alle Interfaces binden (NeighborJack-Schutz im
-        # öffentlichen WLAN). Für Container/Cloud explizit MCP_HOST=0.0.0.0
-        # setzen – dort ist das Binding an alle Interfaces gewollt.
-        host = os.environ.get("MCP_HOST", "127.0.0.1")
-        port = int(os.environ.get("MCP_PORT", os.environ.get("PORT", "8000")))
+        host, port = _resolve_sse_bind()
         logger.info(f"Starting SSE server on {host}:{port}")
         mcp.run(transport="sse", host=host, port=port)
     else:
