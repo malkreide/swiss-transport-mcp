@@ -112,6 +112,7 @@ Try it immediately in Claude Desktop:
 | `MCP_ENV` / `ENV` | Process environment. Must be `dev`/`development`/`local`/`test` to allow disabling TLS verification. | _(unset → production)_ |
 | `TRANSPORT_SSL_VERIFY` | Set to `false` to disable TLS certificate verification. **Honoured only when `MCP_ENV` marks a dev environment** – otherwise the request is ignored and verification stays on. | `true` |
 | `TRANSPORT_CKAN_URL` | Override the CKAN base URL. Must stay on the egress allow-list (`*.opentransportdata.swiss`); off-site overrides are refused. | `https://api.opentransportdata.swiss/ckan-api` |
+| `MCP_CORS_ORIGINS` | Comma-separated list of browser origins allowed to call the HTTP transport. Use `*` to allow any origin (not recommended). The `Mcp-Session-Id` header is exposed to these origins. | `https://claude.ai` |
 
 > 🔒 **Egress allow-list:** all outbound requests are restricted to `https://` on `opentransportdata.swiss` hosts. Any other host is refused before a request is sent (SSRF / egress hardening).
 

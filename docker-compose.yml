@@ -15,6 +15,8 @@ services:
       MCP_HOST: 0.0.0.0          # inside the container, bind all interfaces
       MCP_PORT: "8000"
       LOG_LEVEL: INFO
+      # Browser origins allowed to call the HTTP transport (comma-separated).
+      MCP_CORS_ORIGINS: ${MCP_CORS_ORIGINS:-https://claude.ai}
       # API keys – supply via your shell / .env (never commit them).
       TRANSPORT_API_KEY: ${TRANSPORT_API_KEY:-}
       SIRI_SX_API_KEY: ${SIRI_SX_API_KEY:-}
