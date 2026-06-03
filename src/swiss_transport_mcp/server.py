@@ -294,6 +294,87 @@ class DatasetDetailInput(BaseModel):
 
 
 # ===========================================================================
+# Tool output models (SDK-002)
+# ===========================================================================
+# The core OJP/CKAN tools return typed Pydantic models instead of hand-built
+# json.dumps strings, so the MCP client gets a declared output schema and
+# structured content. Each model carries an optional `message` that holds the
+# in-band "not found" / error text (preserving the OBS-001 protocol-vs-execution
+# error separation). Deeply nested, variable upstream shapes (stops, trip legs,
+# resources) stay as `list[dict]` rather than being over-modelled.
+
+
+class StopSearchResult(BaseModel):
+    """Result of transport_search_stop."""
+
+    query: str | None = None
+    count: int = 0
+    stops: list[dict[str, Any]] = []
+    hint: str | None = None
+    message: str | None = None
+
+
+class NearbyStopsResult(BaseModel):
+    """Result of transport_nearby_stops."""
+
+    latitude: float | None = None
+    longitude: float | None = None
+    count: int = 0
+    nearby_stops: list[dict[str, Any]] = []
+    hint: str | None = None
+    message: str | None = None
+
+
+class DeparturesResult(BaseModel):
+    """Result of transport_departures."""
+
+    stop_id: str | None = None
+    stop_name: str | None = None
+    type: str | None = None
+    count: int = 0
+    departures: list[dict[str, Any]] = []
+    hint: str | None = None
+    message: str | None = None
+
+
+class TripPlanResult(BaseModel):
+    """Result of transport_trip_plan."""
+
+    origin: str | None = None
+    destination: str | None = None
+    count: int = 0
+    trips: list[dict[str, Any]] = []
+    hint: str | None = None
+    message: str | None = None
+
+
+class DatasetSearchResult(BaseModel):
+    """Result of transport_search_datasets."""
+
+    query: str | None = None
+    total_found: int = 0
+    showing: int = 0
+    datasets: list[dict[str, Any]] = []
+    hint: str | None = None
+    message: str | None = None
+
+
+class DatasetDetailResult(BaseModel):
+    """Result of transport_get_dataset."""
+
+    id: str | None = None
+    title: str | None = None
+    description: str | None = None
+    organization: str | None = None
+    license: str | None = None
+    tags: list[str] = []
+    last_modified: str | None = None
+    url: str | None = None
+    resources: list[dict[str, Any]] = []
+    message: str | None = None
+
+
+# ===========================================================================
 # CORE TOOLS 1-6: OJP + CKAN (Original)
 # ===========================================================================
 
@@ -311,7 +392,7 @@ class DatasetDetailInput(BaseModel):
         "openWorldHint": True,
     },
 )
-async def transport_search_stop(params: SearchStopInput) -> str:
+async def transport_search_stop(params: SearchStopInput) -> StopSearchResult:
     """Search for Swiss public transport stops and stations by name.
 
     Searches across all Swiss public transport stops (train stations,
@@ -319,7 +400,7 @@ async def transport_search_stop(params: SearchStopInput) -> str:
     transport_departures and transport_trip_plan.
 
     Returns:
-        JSON list of matching stops with id, name, coordinates, and transport modes.
+        Matching stops with id, name, coordinates, and transport modes.
     """
     try:
         xml_request = ojp_client.build_location_request(
@@ -330,25 +411,25 @@ async def transport_search_stop(params: SearchStopInput) -> str:
 
         error = ojp_client.parse_error_response(xml_response)
         if error:
-            return f"OJP Error: {error}"
+            return StopSearchResult(query=params.query, message=f"OJP Error: {error}")
 
         locations = ojp_client.parse_location_response(xml_response)
 
         if not locations:
-            return json.dumps({
-                "message": f"No stops found for '{params.query}'. Try a broader search term.",
-                "results": [],
-            })
+            return StopSearchResult(
+                query=params.query,
+                message=f"No stops found for '{params.query}'. Try a broader search term.",
+            )
 
-        return json.dumps({
-            "query": params.query,
-            "count": len(locations),
-            "stops": locations,
-            "hint": "Use the 'stop_id' value with transport_departures or transport_trip_plan.",
-        }, ensure_ascii=False, indent=2)
+        return StopSearchResult(
+            query=params.query,
+            count=len(locations),
+            stops=locations,
+            hint="Use the 'stop_id' value with transport_departures or transport_trip_plan.",
+        )
 
     except Exception as e:
-        return api_client.handle_api_error(e)
+        return StopSearchResult(query=params.query, message=api_client.handle_api_error(e))
 
 
 # ---------------------------------------------------------------------------
@@ -365,14 +446,14 @@ async def transport_search_stop(params: SearchStopInput) -> str:
         "openWorldHint": True,
     },
 )
-async def transport_nearby_stops(params: SearchStopByCoordInput) -> str:
+async def transport_nearby_stops(params: SearchStopByCoordInput) -> NearbyStopsResult:
     """Find public transport stops near a geographic location.
 
     Useful for finding stops near a school, address, or point of interest.
     Swiss coordinates only (lat 45–48.5, lon 5.5–10.8).
 
     Returns:
-        JSON list of nearby stops with id, name, coordinates, and distance info.
+        Nearby stops with id, name, coordinates, and distance info.
     """
     try:
         xml_request = ojp_client.build_location_coord_request(
@@ -384,7 +465,11 @@ async def transport_nearby_stops(params: SearchStopByCoordInput) -> str:
 
         error = ojp_client.parse_error_response(xml_response)
         if error:
-            return f"OJP Error: {error}"
+            return NearbyStopsResult(
+                latitude=params.latitude,
+                longitude=params.longitude,
+                message=f"OJP Error: {error}",
+            )
 
         locations = ojp_client.parse_location_response(xml_response)
 
@@ -400,21 +485,26 @@ async def transport_nearby_stops(params: SearchStopByCoordInput) -> str:
                 unique_locations.append(loc)
 
         if not unique_locations:
-            return json.dumps({
-                "message": "No stops found near these coordinates.",
-                "results": [],
-            })
+            return NearbyStopsResult(
+                latitude=params.latitude,
+                longitude=params.longitude,
+                message="No stops found near these coordinates.",
+            )
 
-        return json.dumps({
-            "latitude": params.latitude,
-            "longitude": params.longitude,
-            "count": len(unique_locations),
-            "nearby_stops": unique_locations,
-            "hint": "Use 'stop_id' with transport_departures or transport_trip_plan.",
-        }, ensure_ascii=False, indent=2)
+        return NearbyStopsResult(
+            latitude=params.latitude,
+            longitude=params.longitude,
+            count=len(unique_locations),
+            nearby_stops=unique_locations,
+            hint="Use 'stop_id' with transport_departures or transport_trip_plan.",
+        )
 
     except Exception as e:
-        return api_client.handle_api_error(e)
+        return NearbyStopsResult(
+            latitude=params.latitude,
+            longitude=params.longitude,
+            message=api_client.handle_api_error(e),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -431,7 +521,7 @@ async def transport_nearby_stops(params: SearchStopByCoordInput) -> str:
         "openWorldHint": True,
     },
 )
-async def transport_departures(params: DeparturesInput, ctx: Context) -> str:
+async def transport_departures(params: DeparturesInput, ctx: Context) -> DeparturesResult:
     """Get upcoming departures or arrivals at a Swiss public transport stop.
 
     Shows real-time information including delays when available.
@@ -440,8 +530,8 @@ async def transport_departures(params: DeparturesInput, ctx: Context) -> str:
     Use transport_search_stop first to get the stop_id.
 
     Returns:
-        JSON list of departures with line, destination, scheduled time,
-        real-time time, delay, and platform.
+        Departures with line, destination, scheduled time, real-time time,
+        delay, and platform.
     """
     try:
         await ctx.info(f"Fetching {params.event_type}s for stop {params.stop_id}")
@@ -456,26 +546,38 @@ async def transport_departures(params: DeparturesInput, ctx: Context) -> str:
 
         error = ojp_client.parse_error_response(xml_response)
         if error:
-            return f"OJP Error: {error}"
+            return DeparturesResult(
+                stop_id=params.stop_id,
+                stop_name=params.stop_name or params.stop_id,
+                type=params.event_type,
+                message=f"OJP Error: {error}",
+            )
 
         events = ojp_client.parse_stop_event_response(xml_response)
 
         if not events:
-            return json.dumps({
-                "message": f"No {params.event_type}s found for stop {params.stop_id}.",
-                "results": [],
-            })
+            return DeparturesResult(
+                stop_id=params.stop_id,
+                stop_name=params.stop_name or params.stop_id,
+                type=params.event_type,
+                message=f"No {params.event_type}s found for stop {params.stop_id}.",
+            )
 
-        return json.dumps({
-            "stop_id": params.stop_id,
-            "stop_name": params.stop_name or params.stop_id,
-            "type": params.event_type,
-            "count": len(events),
-            "departures": events,
-        }, ensure_ascii=False, indent=2)
+        return DeparturesResult(
+            stop_id=params.stop_id,
+            stop_name=params.stop_name or params.stop_id,
+            type=params.event_type,
+            count=len(events),
+            departures=events,
+        )
 
     except Exception as e:
-        return api_client.handle_api_error(e)
+        return DeparturesResult(
+            stop_id=params.stop_id,
+            stop_name=params.stop_name or params.stop_id,
+            type=params.event_type,
+            message=api_client.handle_api_error(e),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -492,7 +594,7 @@ async def transport_departures(params: DeparturesInput, ctx: Context) -> str:
         "openWorldHint": True,
     },
 )
-async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> str:
+async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> TripPlanResult:
     """Plan a journey between two locations in Switzerland.
 
     Works like the SBB app: enter origin and destination (stop IDs or
@@ -503,7 +605,7 @@ async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> str:
     Place names (addresses) also work but may be slower.
 
     Returns:
-        JSON list of trip options, each with legs (individual journey segments),
+        Trip options, each with legs (individual journey segments),
         total duration, number of transfers, and transport modes used.
     """
     try:
@@ -518,26 +620,38 @@ async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> str:
 
         error = ojp_client.parse_error_response(xml_response)
         if error:
-            return f"OJP Error: {error}"
+            return TripPlanResult(
+                origin=params.origin,
+                destination=params.destination,
+                message=f"OJP Error: {error}",
+            )
 
         trips = ojp_client.parse_trip_response(xml_response)
 
         if not trips:
-            return json.dumps({
-                "message": f"No trips found from '{params.origin}' to '{params.destination}'. Try using stop IDs instead of names.",
-                "results": [],
-            })
+            return TripPlanResult(
+                origin=params.origin,
+                destination=params.destination,
+                message=(
+                    f"No trips found from '{params.origin}' to '{params.destination}'. "
+                    "Try using stop IDs instead of names."
+                ),
+            )
 
-        return json.dumps({
-            "origin": params.origin,
-            "destination": params.destination,
-            "count": len(trips),
-            "trips": trips,
-            "hint": "Each trip contains legs: 'timed' = public transport, 'walk' = walking, 'transfer' = platform change.",
-        }, ensure_ascii=False, indent=2)
+        return TripPlanResult(
+            origin=params.origin,
+            destination=params.destination,
+            count=len(trips),
+            trips=trips,
+            hint="Each trip contains legs: 'timed' = public transport, 'walk' = walking, 'transfer' = platform change.",
+        )
 
     except Exception as e:
-        return api_client.handle_api_error(e)
+        return TripPlanResult(
+            origin=params.origin,
+            destination=params.destination,
+            message=api_client.handle_api_error(e),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -554,7 +668,7 @@ async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> str:
         "openWorldHint": True,
     },
 )
-async def transport_search_datasets(params: DatasetSearchInput) -> str:
+async def transport_search_datasets(params: DatasetSearchInput) -> DatasetSearchResult:
     """Search the Swiss transport open data catalog (~90 datasets).
 
     Find datasets about timetables, real-time data, GTFS feeds,
@@ -562,8 +676,7 @@ async def transport_search_datasets(params: DatasetSearchInput) -> str:
     opentransportdata.swiss.
 
     Returns:
-        JSON list of matching datasets with name, description, formats,
-        and download URLs.
+        Matching datasets with name, description, formats, and download URLs.
     """
     try:
         result = await api_client.ckan_request(
@@ -584,16 +697,16 @@ async def transport_search_datasets(params: DatasetSearchInput) -> str:
             }
             datasets.append(ds)
 
-        return json.dumps({
-            "query": params.query,
-            "total_found": result.get("count", 0),
-            "showing": len(datasets),
-            "datasets": datasets,
-            "hint": "Use 'id' with transport_get_dataset for full details and download links.",
-        }, ensure_ascii=False, indent=2)
+        return DatasetSearchResult(
+            query=params.query,
+            total_found=result.get("count", 0),
+            showing=len(datasets),
+            datasets=datasets,
+            hint="Use 'id' with transport_get_dataset for full details and download links.",
+        )
 
     except Exception as e:
-        return api_client.handle_api_error(e)
+        return DatasetSearchResult(query=params.query, message=api_client.handle_api_error(e))
 
 
 # ---------------------------------------------------------------------------
@@ -610,7 +723,7 @@ async def transport_search_datasets(params: DatasetSearchInput) -> str:
         "openWorldHint": True,
     },
 )
-async def transport_get_dataset(params: DatasetDetailInput) -> str:
+async def transport_get_dataset(params: DatasetDetailInput) -> DatasetDetailResult:
     """Get full details of a specific transport dataset.
 
     Returns metadata, description, all available resources (files/APIs)
@@ -619,7 +732,7 @@ async def transport_get_dataset(params: DatasetDetailInput) -> str:
     Use transport_search_datasets first to find the dataset ID.
 
     Returns:
-        JSON with full dataset metadata, resources with URLs, and format info.
+        Full dataset metadata, resources with URLs, and format info.
     """
     try:
         pkg = await api_client.ckan_request(
@@ -637,22 +750,20 @@ async def transport_get_dataset(params: DatasetDetailInput) -> str:
                 "last_modified": r.get("last_modified", ""),
             })
 
-        dataset = {
-            "id": pkg.get("name"),
-            "title": pkg.get("title"),
-            "description": pkg.get("notes", ""),
-            "organization": pkg.get("organization", {}).get("title", ""),
-            "license": pkg.get("license_title", ""),
-            "tags": [t.get("name") for t in pkg.get("tags", [])],
-            "last_modified": pkg.get("metadata_modified", ""),
-            "url": f"https://data.opentransportdata.swiss/dataset/{pkg.get('name')}",
-            "resources": resources,
-        }
-
-        return json.dumps(dataset, ensure_ascii=False, indent=2)
+        return DatasetDetailResult(
+            id=pkg.get("name"),
+            title=pkg.get("title"),
+            description=pkg.get("notes", ""),
+            organization=pkg.get("organization", {}).get("title", ""),
+            license=pkg.get("license_title", ""),
+            tags=[t.get("name") for t in pkg.get("tags", [])],
+            last_modified=pkg.get("metadata_modified", ""),
+            url=f"https://data.opentransportdata.swiss/dataset/{pkg.get('name')}",
+            resources=resources,
+        )
 
     except Exception as e:
-        return api_client.handle_api_error(e)
+        return DatasetDetailResult(message=api_client.handle_api_error(e))
 
 
 # ===========================================================================
