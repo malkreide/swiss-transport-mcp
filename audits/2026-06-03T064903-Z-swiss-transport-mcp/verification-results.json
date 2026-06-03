@@ -1,0 +1,451 @@
+{
+  "audit_meta": {
+    "server_name": "swiss-transport-mcp",
+    "audit_date": "2026-06-03",
+    "skill_version": "1.0.0",
+    "catalog_version": "v0.5.0 (68 checks)",
+    "catalog_hash": "091f446b27965044ce658a1d5f4b2cabe2b0ab5661dcc1a53b6be8f1f2e093c0",
+    "applies_when_dsl_version": "1.0",
+    "policy": "fail-or-partial"
+  },
+  "results": {
+    "ARCH-005": {
+      "status": "pass",
+      "category": "ARCH",
+      "severity": "critical",
+      "evidence": [
+        "api_client.py:28-56 — all keys read via os.environ.get (TRANSPORT_OJP_API_KEY/TRANSPORT_CKAN_API_KEY/TRANSPORT_API_KEY)",
+        "api_infrastructure.py:353-413 — create_transport_client takes keys as args, no literals",
+        "grep for hardcoded secrets across src/ returned no matches; only 'your_key_here' placeholder in claude_desktop_config.json"
+      ],
+      "gaps": ["No .gitignore in repo — a future .env could be committed accidentally (low)"]
+    },
+    "OBS-004": {
+      "status": "partial",
+      "category": "OBS",
+      "severity": "critical",
+      "evidence": [
+        "No print() statements anywhere in src/ (grep clean)",
+        "No logging.basicConfig writing to stdout; loggers are unconfigured (NullHandler-equivalent) so stdio stream stays clean"
+      ],
+      "gaps": [
+        "No explicit logging.basicConfig(stream=sys.stderr) — best-practice requires logging be pinned to stderr for stdio transport (Modus 2 pass-pattern not met)"
+      ]
+    },
+    "SEC-004": {
+      "status": "partial",
+      "category": "SEC",
+      "severity": "critical",
+      "evidence": [
+        "All upstream URLs are hardcoded https:// constants (api_client.py:19-21, api_infrastructure.py:376-410) — no user/LLM-supplied URLs reach the HTTP client",
+        "Tool args are stop names/IDs/coordinates, never URLs (server.py:99-205) → no direct SSRF surface"
+      ],
+      "gaps": [
+        "api_client.py:85,121 — TRANSPORT_SSL_VERIFY=false disables TLS verification (MITM enabler), no guard preventing it in production",
+        "No explicit HTTPS-enforcement / private-IP & metadata-endpoint (169.254.169.254) blocklist helper",
+        "TRANSPORT_CKAN_URL (api_client.py:110) allows operator override of base URL with no scheme validation"
+      ]
+    },
+    "SEC-009": {
+      "status": "partial",
+      "category": "SEC",
+      "severity": "critical",
+      "evidence": [
+        "No custom session-id generation in code — Mcp-Session-Id handling delegated to the MCP SDK SSE transport (no weak PRNG / timestamp IDs in src/)"
+      ],
+      "gaps": [
+        "auth_model=none → no user-identity binding of session-id possible (<user_id>:<session_id> pattern not implemented)",
+        "SDK session-id entropy not independently verified for the SSE deployment path"
+      ]
+    },
+    "SEC-016": {
+      "status": "fail",
+      "category": "SEC",
+      "severity": "critical",
+      "evidence": [
+        "server.py:947 — host = os.environ.get(\"MCP_HOST\", \"0.0.0.0\") binds SSE listener to ALL interfaces by default"
+      ],
+      "gaps": [
+        "Default MUST be 127.0.0.1 for local; 0.0.0.0 only via explicit opt-in for container deployment (NeighborJack exposure on shared networks)"
+      ]
+    },
+    "SEC-019": {
+      "status": "pass",
+      "category": "SEC",
+      "severity": "critical",
+      "evidence": [
+        "write_capable=false — all 11 tools are read-only (readOnlyHint=True, server.py:251 ff.)",
+        "data_class=Public Open Data — no private/PII data accessed (README.md:269)",
+        "External communication limited to GET/POST against fixed trusted opentransportdata.swiss endpoints; no mail/webhook/arbitrary-POST → at most 1 of 3 trifecta legs"
+      ],
+      "gaps": ["No explicit lethal-trifecta assessment documented in README/docs (low)"]
+    },
+    "SEC-020": {
+      "status": "pass",
+      "category": "SEC",
+      "severity": "critical",
+      "evidence": [
+        "grep -nE 'os.system|shell=True|eval(|exec(|os.popen|subprocess' src/ → no matches in executable code",
+        "XML requests built via str.format with _escape_xml() on all user-derived values (ojp_client.py:32-38, 94-124)",
+        "No external binary invocation anywhere in the codebase"
+      ],
+      "gaps": []
+    },
+    "ARCH-004": {
+      "status": "pass",
+      "category": "ARCH",
+      "severity": "high",
+      "evidence": [
+        "server.py:935-952 — main() selects transport via MCP_TRANSPORT env; tool logic is transport-agnostic via FastMCP mcp.run()",
+        "Business logic (ojp_client, siri_sx, occupancy, fare, formation) has no transport coupling"
+      ],
+      "gaps": []
+    },
+    "ARCH-006": {
+      "status": "pass",
+      "category": "ARCH",
+      "severity": "high",
+      "evidence": [
+        "11 use-case tools (search_stop, departures, trip_plan, disruptions, occupancy, price, formation, …) aggregate OJP/SIRI-SX/CKAN/Fare under one interface — not a 1:1 REST mapping",
+        "Multiple underlying API protocols collapsed into clean tool surface (server.py instructions, README.md:201)"
+      ],
+      "gaps": []
+    },
+    "ARCH-009": {
+      "status": "partial",
+      "category": "ARCH",
+      "severity": "high",
+      "evidence": [
+        "server.py:249-551 — 6 core tools declare full annotations (readOnlyHint/destructiveHint/idempotentHint/openWorldHint)"
+      ],
+      "gaps": [
+        "5 extension tools use bare @mcp.tool() with NO annotations: get_transport_disruptions, get_train_occupancy, get_ticket_price, get_train_composition, check_transport_api_status (server.py:607,648,715,764,818)"
+      ]
+    },
+    "OBS-001": {
+      "status": "pass",
+      "category": "OBS",
+      "severity": "high",
+      "evidence": [
+        "Execution errors returned as in-band user messages via handle_api_error (api_client.py:147-169), not raised as protocol errors",
+        "Dedicated exception hierarchy APIError/RateLimitError/AuthenticationError/NotFoundError (api_infrastructure.py:332-346)"
+      ],
+      "gaps": []
+    },
+    "OBS-002": {
+      "status": "partial",
+      "category": "OBS",
+      "severity": "high",
+      "evidence": [
+        "handle_api_error maps status codes to friendly messages (api_client.py:151-163)"
+      ],
+      "gaps": [
+        "Raw upstream response bodies are forwarded to the LLM: api_client.py:163 and api_infrastructure.py:257,317 include e.response.text[:200..300] — may leak internal error/stacktrace detail"
+      ]
+    },
+    "OPS-001": {
+      "status": "partial",
+      "category": "OPS",
+      "severity": "high",
+      "evidence": [
+        "tests/test_server.py present with offline unit + live integration split; CI runs pytest -m 'not live' across py3.11-3.13 (.github/workflows/ci.yml)"
+      ],
+      "gaps": [
+        "Tests use print()+global counters, NOT assert — a failing check increments a counter but does not fail pytest, so CI stays green on regressions (tests/test_server.py:18-30)",
+        "respx is declared in dev deps but never used; no HTTP mocking → only 2 test functions, real coverage is thin"
+      ]
+    },
+    "OPS-003": {
+      "status": "pass",
+      "category": "OPS",
+      "severity": "high",
+      "evidence": [
+        "Server is fully read-only (Phase 1): write_capable=false, all tools readOnlyHint=True — correct read-only-first phasing"
+      ],
+      "gaps": []
+    },
+    "SCALE-001": {
+      "status": "partial",
+      "category": "SCALE",
+      "severity": "high",
+      "evidence": [
+        "Cloud path exists and avoids raw stdio for browser access (server.py:946-950)"
+      ],
+      "gaps": [
+        "Uses legacy SSE transport (mcp.run(transport=\"sse\"), server.py:950) instead of the current Streamable HTTP transport recommended for cloud deployments"
+      ]
+    },
+    "SCALE-002": {
+      "status": "partial",
+      "category": "SCALE",
+      "severity": "high",
+      "evidence": [
+        "Single-instance Render deployment documented (README.md:152-156)"
+      ],
+      "gaps": [
+        "No stateful/sticky load-balancing strategy documented for multi-instance SSE scale-out (session affinity undefined)"
+      ]
+    },
+    "SCALE-003": {
+      "status": "partial",
+      "category": "SCALE",
+      "severity": "high",
+      "evidence": [
+        "Single-instance deployment → no edge-LB routing required today"
+      ],
+      "gaps": [
+        "No Mcp-Session-Id-based edge routing (HAProxy stick-tables / equivalent) defined for horizontal scaling"
+      ]
+    },
+    "SDK-001": {
+      "status": "partial",
+      "category": "SDK",
+      "severity": "high",
+      "evidence": [
+        "Extension client created lazily and reused (server.py:_get_ext_client)"
+      ],
+      "gaps": [
+        "No FastMCP lifespan via @asynccontextmanager + AsyncExitStack; the httpx AsyncClient in TransportAPIClient has close() (api_infrastructure.py:323) but is never invoked — connections not cleanly torn down on shutdown",
+        "api_client.py opens a fresh httpx.AsyncClient per request (api_client.py:86,122) instead of a lifespan-managed pooled client"
+      ]
+    },
+    "SDK-004": {
+      "status": "partial",
+      "category": "SDK",
+      "severity": "high",
+      "evidence": [
+        "SSE transport enabled for browser/claude.ai access (README.md:148-156)"
+      ],
+      "gaps": [
+        "No explicit CORS configuration exposing Mcp-Session-Id header for cross-origin browser clients (relies on framework defaults, unverified)"
+      ]
+    },
+    "SEC-005": {
+      "status": "partial",
+      "category": "SEC",
+      "severity": "high",
+      "evidence": [
+        "Upstream hosts are fixed https:// constants, not user-controlled → DNS-rebinding (TOCTOU) practical risk is low"
+      ],
+      "gaps": ["No DNS-pinning between validation and request; TRANSPORT_SSL_VERIFY=false would compound any rebinding"]
+    },
+    "SEC-006": {
+      "status": "pass",
+      "category": "SEC",
+      "severity": "high",
+      "evidence": [
+        "server.py:944 — default MCP_TRANSPORT=stdio; network/SSE transport is strictly opt-in via env var",
+        "claude_desktop_config.json uses stdio command launch (network-isolated)"
+      ],
+      "gaps": []
+    },
+    "SEC-007": {
+      "status": "partial",
+      "category": "SEC",
+      "severity": "high",
+      "evidence": [
+        "Managed-platform sandboxing implied by Render deployment model (README.md:152)"
+      ],
+      "gaps": [
+        "No Dockerfile / container definition in repo → no explicit minimal-privilege, non-root, or chroot sandboxing for the cloud path"
+      ]
+    },
+    "SEC-013": {
+      "status": "partial",
+      "category": "SEC",
+      "severity": "high",
+      "evidence": [
+        "API keys sourced from environment variables (acceptable production minimum) — api_client.py:28-56"
+      ],
+      "gaps": [
+        "No secret-manager integration (Vault / cloud secret store) recommended for production; plain env-vars only",
+        "No .gitignore guarding a local .env from accidental commit"
+      ]
+    },
+    "SEC-018": {
+      "status": "pass",
+      "category": "SEC",
+      "severity": "high",
+      "evidence": [
+        "Pydantic v2 models with ConfigDict(extra=\"forbid\") on all tool inputs (server.py:99-205)",
+        "Bounded constraints: min_length/max_length on strings, ge/le numeric bounds (lat 45-48.5, lon 5.5-10.8, limits), regex pattern on event_type (server.py:104-205)",
+        "XML boundary escaping via _escape_xml() on all free-text values before template insertion (ojp_client.py:32-124)"
+      ],
+      "gaps": []
+    },
+    "SEC-021": {
+      "status": "partial",
+      "category": "SEC",
+      "severity": "high",
+      "evidence": [
+        "Effective egress limited to hardcoded api.opentransportdata.swiss hosts (api_client.py:19-21, api_infrastructure.py:376-410)"
+      ],
+      "gaps": [
+        "No enforced code-layer egress allow-list (hosts are convention, not validated); TRANSPORT_CKAN_URL override bypasses it; no network-layer egress policy"
+      ]
+    },
+    "SEC-022": {
+      "status": "partial",
+      "category": "SEC",
+      "severity": "high",
+      "evidence": [
+        "Namespace prefixing present: core tools transport_*, extension tools get_transport_*/get_train_* (server.py tool names)"
+      ],
+      "gaps": ["No tool-hash-pinning / integrity manifest to detect rug-pull tool redefinition"]
+    },
+    "ARCH-001": {
+      "status": "pass",
+      "category": "ARCH",
+      "severity": "medium",
+      "evidence": [
+        "Consistent snake_case domain-prefixed names: transport_search_stop, transport_departures, transport_trip_plan, transport_search_datasets, transport_get_dataset"
+      ],
+      "gaps": ["Minor prefix inconsistency between core (transport_*) and extension (get_transport_*/get_train_*) tools"]
+    },
+    "ARCH-002": {
+      "status": "pass",
+      "category": "ARCH",
+      "severity": "medium",
+      "evidence": [
+        "Tool docstrings carry rich descriptions plus usage hints and concrete examples (server.py:257-265, 608-628), and tools provide 'hint' fields steering the next call (server.py:290,356,533)"
+      ],
+      "gaps": []
+    },
+    "ARCH-003": {
+      "status": "pass",
+      "category": "ARCH",
+      "severity": "medium",
+      "evidence": [
+        "Search/lookup tools return guidance hints rather than bare empty results (server.py:290,356) and chain users to the right next tool"
+      ],
+      "gaps": []
+    },
+    "ARCH-007": {
+      "status": "pass",
+      "category": "ARCH",
+      "severity": "medium",
+      "evidence": [
+        "Internal composability (RateLimiter+SimpleCache+TransportAPIClient, api_infrastructure.py) hidden behind atomic external tools"
+      ],
+      "gaps": []
+    },
+    "ARCH-008": {
+      "status": "partial",
+      "category": "ARCH",
+      "severity": "medium",
+      "evidence": [
+        "Tools primitive (11 @mcp.tool) and Resources primitive (transport://datasets, transport://info — server.py:884,898) both used"
+      ],
+      "gaps": ["Prompts primitive (@mcp.prompt) not used — only 2 of 3 MCP primitives present"]
+    },
+    "ARCH-011": {
+      "status": "pass",
+      "category": "ARCH",
+      "severity": "medium",
+      "evidence": [
+        "src/-layout package (src/swiss_transport_mcp/), tests/ dir, bilingual README.md + README.de.md, CHANGELOG.md, pyproject.toml"
+      ],
+      "gaps": ["No .gitignore present in repo root"]
+    },
+    "ARCH-012": {
+      "status": "partial",
+      "category": "ARCH",
+      "severity": "medium",
+      "evidence": [
+        "CHANGELOG.md maintained with dated, semver-style entries (CHANGELOG.md:6)"
+      ],
+      "gaps": [
+        "No MCP protocolVersion pinning; mcp[cli]>=1.0.0 is an unbounded floating lower bound (pyproject.toml) → SDK drift risk"
+      ]
+    },
+    "CH-004": {
+      "status": "pass",
+      "category": "CH",
+      "severity": "medium",
+      "evidence": [
+        "README.md:273 attributes opentransportdata.swiss data under open licences (ODbL / CC BY 4.0) and links the ToS"
+      ],
+      "gaps": []
+    },
+    "OBS-003": {
+      "status": "partial",
+      "category": "OBS",
+      "severity": "medium",
+      "evidence": [
+        "stdlib logging used with named logger and severity levels (logger.info/debug/warning across modules)"
+      ],
+      "gaps": ["No structured (JSON) logging and no explicit RFC 5424 severity formatting / handler configuration"]
+    },
+    "OBS-006": {
+      "status": "fail",
+      "category": "OBS",
+      "severity": "medium",
+      "evidence": [],
+      "gaps": ["No OpenTelemetry / distributed tracing instrumentation on tool calls (no otel imports anywhere)"]
+    },
+    "OPS-002": {
+      "status": "pass",
+      "category": "OPS",
+      "severity": "medium",
+      "evidence": [
+        "Bilingual docs (README.md + README.de.md), ASCII architecture diagram (README.md:201-219), Safety & Limits (README.md:266) and Known Limitations (README.md:278) sections"
+      ],
+      "gaps": []
+    },
+    "SCALE-004": {
+      "status": "fail",
+      "category": "SCALE",
+      "severity": "medium",
+      "evidence": [],
+      "gaps": ["No Dockerfile / multi-stage container build present despite documented cloud deployment"]
+    },
+    "SCALE-006": {
+      "status": "fail",
+      "category": "SCALE",
+      "severity": "medium",
+      "evidence": [],
+      "gaps": ["No per-container resource limits (memory/CPU/FD) defined; no container manifest to attach them to"]
+    },
+    "SDK-002": {
+      "status": "partial",
+      "category": "SDK",
+      "severity": "medium",
+      "evidence": [
+        "Pydantic v2 used for tool inputs (server.py:99-205)"
+      ],
+      "gaps": ["Tool returns are hand-serialized json.dumps strings, not Pydantic/TypedDict/dataclass return types → no typed output schema"]
+    },
+    "SDK-003": {
+      "status": "partial",
+      "category": "SDK",
+      "severity": "medium",
+      "evidence": [
+        "Tools are fast single-shot reads where progress reporting is non-critical"
+      ],
+      "gaps": ["No Context (ctx) injection used for progress reports / structured logging on longer OJP trip calculations"]
+    },
+    "SEC-008": {
+      "status": "partial",
+      "category": "SEC",
+      "severity": "medium",
+      "evidence": [
+        "Install + Claude Desktop config documented (README.md:56-146)"
+      ],
+      "gaps": ["No explicit pre-configuration consent step for local-server installation documented"]
+    },
+    "SEC-014": {
+      "status": "todo",
+      "category": "SEC",
+      "severity": "medium",
+      "evidence": [],
+      "gaps": ["No MCP-gateway tool allow-listing in place — requires human decision on whether a gateway is in scope for this portfolio"]
+    },
+    "SEC-015": {
+      "status": "todo",
+      "category": "SEC",
+      "severity": "medium",
+      "evidence": [],
+      "gaps": ["No pre-flight tool-poisoning detection — needs manual review against portfolio-wide tooling strategy"]
+    }
+  }
+}

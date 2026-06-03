@@ -1,0 +1,19 @@
+name: swiss-transport-mcp
+repo: https://github.com/malkreide/swiss-transport-mcp
+transport: dual                      # stdio (Claude Desktop) + SSE (cloud)
+sdk_language: Python                  # FastMCP (mcp[cli]) — Python 3.11+
+auth_model: none                     # MCP server has no client auth; upstream API keys only
+data_class: Public Open Data         # opentransportdata.swiss, no PII (README security note)
+write_capable: false                 # all 11 tools are read-only queries
+deployment: [local-stdio, Render, Railway]   # README documents Render (recommended) + Railway
+is_cloud_deployed: true              # derived: SSE transport binds 0.0.0.0, cloud-documented
+uses_sampling: false
+uses_sequential_thinking: false
+tools_include_filesystem: false
+tools_make_external_requests: true   # calls OJP / SIRI-SX / CKAN / Fare / Occupancy / Formation APIs
+stadt_zuerich_context: false         # national Swiss transport, not Stadt-Zürich-specific
+schulamt_context: false
+volksschule_context: false
+enterprise_context: false
+data_source:
+  is_swiss_open_data: true
