@@ -28,9 +28,12 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
 
+import anyio
 import httpx
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.applications import Starlette
+from starlette.middleware.cors import CORSMiddleware
 
 from . import api_client, ojp_client
 from .api_infrastructure import TransportAPIClient, create_transport_client
@@ -1138,6 +1141,51 @@ def _resolve_http_bind(env: dict[str, str] | None = None) -> tuple[str, int]:
     return host, port
 
 
+def _resolve_cors_origins(env: dict[str, str] | None = None) -> list[str]:
+    """Resolve the allowed CORS origins for browser clients (SDK-004).
+
+    Defaults to ``https://claude.ai``. Override with ``MCP_CORS_ORIGINS`` as a
+    comma-separated list, or ``*`` to allow any origin (logged as a warning).
+    """
+    env = os.environ if env is None else env
+    raw = env.get("MCP_CORS_ORIGINS", "https://claude.ai").strip()
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    return origins or ["https://claude.ai"]
+
+
+def _build_http_app(transport: str, origins: list[str]) -> Starlette:
+    """Build the Starlette app for a network transport with CORS applied.
+
+    Exposing the ``Mcp-Session-Id`` response header is required so browser
+    clients (claude.ai) can read it for session continuity (SDK-004). The
+    FastMCP-configured lifespan (pooled clients, SDK-001) is preserved because
+    it is baked into the app returned here.
+    """
+    app = mcp.sse_app() if transport == "sse" else mcp.streamable_http_app()
+    if "*" in origins:
+        logger.warning("MCP_CORS_ORIGINS=* allows ANY origin – avoid in production.")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        expose_headers=["Mcp-Session-Id"],
+    )
+    return app
+
+
+async def _serve_http(transport: str, host: str, port: int, origins: list[str]) -> None:
+    """Serve a network transport via uvicorn with the CORS-wrapped app."""
+    import uvicorn
+
+    app = _build_http_app(transport, origins)
+    config = uvicorn.Config(
+        app, host=host, port=port, log_level=mcp.settings.log_level.lower()
+    )
+    await uvicorn.Server(config).serve()
+
+
 def main():
     """Run the MCP server.
 
@@ -1160,11 +1208,8 @@ def main():
     transport = _resolve_transport()
 
     if transport in _NETWORK_TRANSPORTS:
-        # host/port are read from settings by FastMCP – run() itself does not
-        # take them as arguments.
         host, port = _resolve_http_bind()
-        mcp.settings.host = host
-        mcp.settings.port = port
+        origins = _resolve_cors_origins()
         if transport == "sse":
             logger.warning(
                 "MCP_TRANSPORT=sse is deprecated; use 'streamable-http' (or 'http')."
@@ -1172,8 +1217,11 @@ def main():
             path = mcp.settings.sse_path
         else:
             path = mcp.settings.streamable_http_path
-        logger.info(f"Starting {transport} server on http://{host}:{port}{path}")
-        mcp.run(transport=transport)
+        logger.info(
+            f"Starting {transport} server on http://{host}:{port}{path} "
+            f"(CORS origins: {origins})"
+        )
+        anyio.run(lambda: _serve_http(transport, host, port, origins))
     elif transport == "stdio":
         mcp.run()
     else:
