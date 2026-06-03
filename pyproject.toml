@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name        = "swiss-transport-mcp"
-version     = "0.2.0"
+version     = "0.3.0"
 description = "MCP Server for Swiss public transport -- OJP journey planner, real-time departures, disruptions, occupancy, ticket prices, train formations and open data from opentransportdata.swiss"
 readme      = "README.md"
 license     = { file = "LICENSE" }
@@ -18,7 +18,7 @@ keywords = [
 ]
 
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
