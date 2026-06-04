@@ -1,6 +1,6 @@
 [🇬🇧 English Version](README.md)
 
-> 🇨🇭 **Teil des [Swiss Public Data MCP Portfolios](https://github.com/malkreide)**
+> 🇨🇭 **Teil des [Swiss Public Data MCP Portfolios](https://github.com/malkreide/swiss-public-data-mcp)**
 
 # 🚆 swiss-transport-mcp
 
