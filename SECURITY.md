@@ -1,5 +1,7 @@
 # Security Policy & Posture
 
+[🇩🇪 Deutsche Version](SECURITY.de.md)
+
 `swiss-transport-mcp` was hardened against the internal MCP best-practice audit
 catalogue. This document summarises the security posture and records the
 **accepted-risk** decisions for controls that are deliberately handled at the
