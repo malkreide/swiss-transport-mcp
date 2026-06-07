@@ -53,7 +53,6 @@ otel = [
 swiss-transport-mcp = "swiss_transport_mcp.server:main"
 
 [project.urls]
-"mcp-name" = "io.github.malkreide/swiss-transport-mcp"
 Homepage   = "https://github.com/malkreide/swiss-transport-mcp"
 Repository = "https://github.com/malkreide/swiss-transport-mcp"
 Issues     = "https://github.com/malkreide/swiss-transport-mcp/issues"
