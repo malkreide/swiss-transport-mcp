@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name        = "swiss-transport-mcp"
-version     = "0.3.0"
+version     = "0.3.2"
 description = "MCP server for Swiss public transport – OJP journey planner, real-time departures, disruptions, occupancy, ticket prices, train formations and open data from opentransportdata.swiss"
 readme      = "README.md"
 license     = { file = "LICENSE" }
