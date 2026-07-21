@@ -30,7 +30,7 @@ classifiers = [
 dependencies = [
     # ARCH-012: cap the MCP SDK major version to avoid unreviewed protocol /
     # API drift; bump deliberately after testing against a new major.
-    "mcp[cli]>=1.0.0,<2.0.0",
+    "mcp[cli]>=1.28.1,<2.0.0",
     "httpx>=0.27.0,<1.0.0",
     "pydantic>=2.0.0,<3.0.0",
 ]
