@@ -20,6 +20,7 @@ from typing import Any
 
 import httpx
 
+from . import __version__
 from .net_security import resolve_ssl_verify, validate_egress_url
 from .tracing import span
 
@@ -182,7 +183,7 @@ class TransportAPIClient:
             timeout=30.0,
             follow_redirects=True,  # Wichtig für GTFS-RT!
             verify=resolve_ssl_verify(),
-            headers={"User-Agent": "swiss-transport-mcp/1.0"}
+            headers={"User-Agent": f"swiss-transport-mcp/{__version__}"}
         )
 
     def register_api(self, config: APIConfig):
