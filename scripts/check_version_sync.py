@@ -27,9 +27,11 @@ und läuft damit auch in schlanken CI-Jobs. Auf Python 3.10 (noch keine
 `tomllib`) greift ein Minimal-Parser für die zwei benötigten Felder.
 """
 
+import io
 import json
 import re
 import sys
+import tokenize
 from pathlib import Path
 
 try:
@@ -44,6 +46,27 @@ SRC = ROOT / "src"
 
 # Shields.io-Badge: ![Version](https://img.shields.io/badge/version-X.Y.Z-blue)
 _BADGE = re.compile(r"img\.shields\.io/badge/[Vv]ersion-([^-\s)]+)-")
+
+
+def code_lines(text: str) -> list[str]:
+    """Zeilen ohne Kommentare.
+
+    Kommentare dokumentieren im Portfolio genau die Drift, die dieser Check
+    verhindern soll — etwa «the User-Agent in server.py carried
+    "bakom-mcp/1.0"». Sie zu melden wäre ein Fehlalarm, der die CI grundlos
+    rot färbt. Ausgeschnitten wird per `tokenize`, nicht per `split("#")`:
+    ein `#` in einem String-Literal darf die Zeile nicht abschneiden.
+    """
+    lines = text.splitlines()
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(text).readline):
+            if tok.type == tokenize.COMMENT:
+                row, col = tok.start
+                lines[row - 1] = lines[row - 1][:col]
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        # Nicht parsebare Datei: lieber vollständig prüfen als still übergehen.
+        return text.splitlines()
+    return lines
 
 
 def find_hardcoded(dist: str) -> list[tuple[str, int, str]]:
@@ -66,7 +89,7 @@ def find_hardcoded(dist: str) -> list[tuple[str, int, str]]:
     dunder = re.compile(r"""__version__\s*=\s*["']([^"']+)["']""")
 
     for path in sorted(SRC.rglob("*.py")):
-        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        for lineno, line in enumerate(code_lines(path.read_text(encoding="utf-8")), start=1):
             values = [m.group(1) for m in ua.finditer(line)]
             for m in dunder.finditer(line):
                 if re.match(r"\d+\.\d", m.group(1)):
