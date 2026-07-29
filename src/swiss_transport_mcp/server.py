@@ -34,7 +34,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
 
-from . import api_client, ojp_client
+from . import __version__, api_client, ojp_client
 from .api_infrastructure import TransportAPIClient, create_transport_client
 from .formation import get_formation_health, get_train_formation
 from .logging_config import configure_logging
@@ -110,7 +110,7 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         # Pooled client for the OJP/CKAN module functions.
         http_client = httpx.AsyncClient(
             verify=resolve_ssl_verify(),
-            headers={"User-Agent": "swiss-transport-mcp/1.0"},
+            headers={"User-Agent": f"swiss-transport-mcp/{__version__}"},
         )
         stack.push_async_callback(http_client.aclose)
         api_client.set_shared_client(http_client)
