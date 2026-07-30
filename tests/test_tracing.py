@@ -37,6 +37,36 @@ def test_truthy_parsing(value, expected):
     assert tracing._is_truthy(value) is expected
 
 
+def test_availability_probe_requires_the_sdk_not_just_the_api():
+    """Regression guard for a trap mcp 2.x introduced.
+
+    mcp 2.x depends on ``opentelemetry-api``, so ``from opentelemetry import
+    trace`` now succeeds without the ``otel`` extra. If ``_OTEL_AVAILABLE``
+    probed only that, ``configure_tracing()`` would skip its
+    warn-and-stay-disabled branch and blow up on the SDK imports instead —
+    breaking this module's documented "no crash" promise at server startup.
+
+    So the flag must track the SDK, which is what ``configure_tracing()``
+    actually imports.
+    """
+    import importlib.util
+
+    sdk_present = importlib.util.find_spec("opentelemetry.sdk") is not None
+    assert tracing._OTEL_AVAILABLE is sdk_present
+
+
+def test_enabling_without_the_sdk_never_raises():
+    """The promise itself: requesting tracing without the extra must not crash.
+
+    Passes trivially once the extra is installed; the value is in the run where
+    it is not — which is exactly what CI does.
+    """
+    try:
+        assert configure_tracing(env={"OTEL_TRACES_ENABLED": "1"}) is tracing._OTEL_AVAILABLE
+    finally:
+        configure_tracing(env={})
+
+
 @pytest.mark.skipif(not tracing._OTEL_AVAILABLE, reason="otel extra not installed")
 def test_active_tracing_creates_real_span():
     assert configure_tracing(env={"OTEL_TRACES_ENABLED": "1"}) is True
