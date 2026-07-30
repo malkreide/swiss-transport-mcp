@@ -29,7 +29,7 @@ from typing import Any
 
 import anyio
 import httpx
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.mcpserver import Context, MCPServer
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
@@ -92,7 +92,7 @@ class AppContext:
 
 
 @asynccontextmanager
-async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
+async def app_lifespan(server: MCPServer) -> AsyncIterator[AppContext]:
     """Create and tear down shared resources for the server's lifetime.
 
     Closes the gap from audit finding SDK-001: previously the extension
@@ -129,7 +129,7 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         logger.info("Server lifespan shutting down: closing shared HTTP clients")
 
 
-mcp = FastMCP(
+mcp = MCPServer(
     "swiss_transport_mcp",
     instructions=(
         "Swiss public transport data server with 10 tools. "
@@ -1179,7 +1179,7 @@ def plan_group_trip(
 # Entry point
 # ---------------------------------------------------------------------------
 
-# Transport aliases → canonical FastMCP transport names.
+# Transport aliases → canonical MCPServer transport names.
 _TRANSPORT_ALIASES = {
     "http": "streamable-http",
     "streamable_http": "streamable-http",
@@ -1187,6 +1187,12 @@ _TRANSPORT_ALIASES = {
 }
 # Transports that bind a network listener (need host/port).
 _NETWORK_TRANSPORTS = frozenset({"streamable-http", "sse"})
+# Endpoint paths, used for the startup log line. mcp 2.x removed sse_path and
+# streamable_http_path from MCPServer.settings; they are per-app kwargs whose
+# defaults these mirror. This server does not override them, so the log line
+# stays accurate — a test pins the pair against the SDK defaults.
+_SSE_PATH = "/sse"
+_STREAMABLE_HTTP_PATH = "/mcp"
 
 
 def _resolve_transport(env: dict[str, str] | None = None) -> str:
@@ -1238,15 +1244,29 @@ def _resolve_cors_origins(env: dict[str, str] | None = None) -> list[str]:
     return origins or ["https://claude.ai"]
 
 
-def _build_http_app(transport: str, origins: list[str]) -> Starlette:
+def _build_http_app(
+    transport: str,
+    origins: list[str],
+    host: str = "127.0.0.1",
+    stateless: bool = False,
+) -> Starlette:
     """Build the Starlette app for a network transport with CORS applied.
 
     Exposing the ``Mcp-Session-Id`` response header is required so browser
     clients (claude.ai) can read it for session continuity (SDK-004). The
-    FastMCP-configured lifespan (pooled clients, SDK-001) is preserved because
+    MCPServer-configured lifespan (pooled clients, SDK-001) is preserved because
     it is baked into the app returned here.
+
+    ``host`` and ``stateless`` are per-app kwargs in mcp 2.x — in 1.x they were
+    mutable settings. ``host`` must be the address uvicorn actually binds:
+    2.x auto-enables a loopback-only DNS-rebinding allow-list when ``host``
+    looks like localhost, so leaving it at the default while binding 0.0.0.0
+    would reject every real request with HTTP 421.
     """
-    app = mcp.sse_app() if transport == "sse" else mcp.streamable_http_app()
+    if transport == "sse":
+        app = mcp.sse_app(host=host)
+    else:
+        app = mcp.streamable_http_app(host=host, stateless_http=stateless)
     if "*" in origins:
         logger.warning("MCP_CORS_ORIGINS=* allows ANY origin – avoid in production.")
     app.add_middleware(
@@ -1260,11 +1280,13 @@ def _build_http_app(transport: str, origins: list[str]) -> Starlette:
     return app
 
 
-async def _serve_http(transport: str, host: str, port: int, origins: list[str]) -> None:
+async def _serve_http(
+    transport: str, host: str, port: int, origins: list[str], stateless: bool = False
+) -> None:
     """Serve a network transport via uvicorn with the CORS-wrapped app."""
     import uvicorn
 
-    app = _build_http_app(transport, origins)
+    app = _build_http_app(transport, origins, host=host, stateless=stateless)
     config = uvicorn.Config(
         app, host=host, port=port, log_level=mcp.settings.log_level.lower()
     )
@@ -1291,19 +1313,21 @@ def main():
     if transport in _NETWORK_TRANSPORTS:
         host, port = _resolve_http_bind()
         origins = _resolve_cors_origins()
+        stateless = False
         if transport == "sse":
             logger.warning(
                 "MCP_TRANSPORT=sse is deprecated; use 'streamable-http' (or 'http')."
             )
-            path = mcp.settings.sse_path
+            path = _SSE_PATH
         else:
-            path = mcp.settings.streamable_http_path
+            path = _STREAMABLE_HTTP_PATH
             # SCALE-002/003: stateless mode removes server-side session state,
             # so instances need no sticky load balancing / session-affinity
-            # routing — any instance can serve any request. Must be set before
-            # the app is built.
-            if _resolve_stateless():
-                mcp.settings.stateless_http = True
+            # routing — any instance can serve any request. mcp 2.x takes it as
+            # an app kwarg, so it travels down to _build_http_app instead of
+            # being written onto mcp.settings first.
+            stateless = _resolve_stateless()
+            if stateless:
                 logger.info(
                     "Streamable HTTP in STATELESS mode: no sticky LB / "
                     "Mcp-Session-Id edge routing required for horizontal scale-out."
@@ -1312,7 +1336,7 @@ def main():
             f"Starting {transport} server on http://{host}:{port}{path} "
             f"(CORS origins: {origins})"
         )
-        anyio.run(lambda: _serve_http(transport, host, port, origins))
+        anyio.run(lambda: _serve_http(transport, host, port, origins, stateless))
     elif transport == "stdio":
         mcp.run()
     else:

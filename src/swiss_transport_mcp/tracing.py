@@ -22,6 +22,14 @@ from contextlib import contextmanager
 logger = logging.getLogger("swiss-transport-mcp")
 
 try:  # the otel extra may not be installed
+    # `opentelemetry.sdk` is the load-bearing probe, not the API import below.
+    # mcp 2.x depends on `opentelemetry-api`, so `from opentelemetry import
+    # trace` succeeds even when the `otel` extra is absent. Probing only that
+    # would set _OTEL_AVAILABLE True, skip the warn-and-stay-disabled branch in
+    # configure_tracing(), and turn this module's documented "no crash" promise
+    # into a ModuleNotFoundError at startup for anyone running
+    # OTEL_TRACES_ENABLED=1 without the extra.
+    import opentelemetry.sdk  # noqa: F401
     from opentelemetry import trace as _otel_trace
 
     _OTEL_AVAILABLE = True
