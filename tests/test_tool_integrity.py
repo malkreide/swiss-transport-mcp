@@ -20,10 +20,19 @@ def _tools():
 # ---------------------------------------------------------------------------
 
 def test_all_tools_declare_readonly_annotations():
+    """Every tool must advertise `readOnlyHint: true` to clients.
+
+    Dumped with ``by_alias=True`` on purpose, matching
+    ``tool_integrity._annotations_dict``: mcp 2.x snake_cased the
+    ``ToolAnnotations`` fields, so a plain ``model_dump()`` yields
+    ``read_only_hint`` and the camelCase lookup silently finds nothing — every
+    tool then looks like an offender. The alias is what actually goes over the
+    wire, so asserting on it checks what clients really see.
+    """
     offenders = []
     for tool in _tools():
         ann = tool.annotations
-        data = ann.model_dump() if hasattr(ann, "model_dump") else ann
+        data = ann.model_dump(by_alias=True) if hasattr(ann, "model_dump") else ann
         if not data or data.get("readOnlyHint") is not True:
             offenders.append(tool.name)
     assert not offenders, f"tools missing readOnlyHint annotation: {offenders}"

@@ -147,7 +147,7 @@ async def test_get_dataset_typed(monkeypatch):
 
 
 # Expected top-level field per core tool — proves the schema describes the
-# real structured payload, not the trivial {"result": string} wrapper FastMCP
+# real structured payload, not the trivial {"result": string} wrapper MCPServer
 # generates for plain `-> str` tools.
 _CORE_TOOL_FIELDS = {
     "transport_search_stop": "stops",
@@ -162,7 +162,7 @@ _CORE_TOOL_FIELDS = {
 def test_core_tools_have_structured_output_schema():
     by_name = {t.name: t for t in asyncio.run(server.mcp.list_tools())}
     for name, field in _CORE_TOOL_FIELDS.items():
-        schema = by_name[name].outputSchema
+        schema = by_name[name].output_schema
         assert schema is not None, name
         props = schema.get("properties", {})
         # Typed model fields are present; not the {"result": string} wrapper.
@@ -172,10 +172,10 @@ def test_core_tools_have_structured_output_schema():
 
 
 def test_extension_tools_stay_string_wrapper():
-    # Human-readable tools intentionally keep string returns → FastMCP emits the
+    # Human-readable tools intentionally keep string returns → MCPServer emits the
     # trivial {"result": string} output schema, not a structured one.
     by_name = {t.name: t for t in asyncio.run(server.mcp.list_tools())}
-    schema = by_name["get_train_composition"].outputSchema
+    schema = by_name["get_train_composition"].output_schema
     assert schema is not None
     assert list(schema.get("properties", {})) == ["result"]
     assert schema["properties"]["result"]["type"] == "string"

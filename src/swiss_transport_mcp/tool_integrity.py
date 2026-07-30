@@ -31,7 +31,7 @@ def _annotations_dict(annotations: Any) -> Any:
     if annotations is None:
         return None
     if hasattr(annotations, "model_dump"):
-        return annotations.model_dump(exclude_none=True)
+        return annotations.model_dump(exclude_none=True, by_alias=True)
     if isinstance(annotations, dict):
         return annotations
     return str(annotations)
@@ -49,8 +49,8 @@ def fingerprint_tools(tools: list[Any]) -> dict[str, str]:
         material = json.dumps(
             {
                 "name": tool.name,
-                "inputSchema": getattr(tool, "inputSchema", None),
-                "outputSchema": getattr(tool, "outputSchema", None),
+                "inputSchema": getattr(tool, "input_schema", None),
+                "outputSchema": getattr(tool, "output_schema", None),
                 "annotations": _annotations_dict(getattr(tool, "annotations", None)),
             },
             sort_keys=True,

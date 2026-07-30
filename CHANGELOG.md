@@ -3,6 +3,53 @@
 Alle relevanten Änderungen an diesem Projekt werden hier dokumentiert.
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- **Migration auf die `mcp` 2.x Server-API.** Pin `>=1.28.1,<2` → `>=2.0.0,<3`;
+  `FastMCP` → `MCPServer` (`mcp.server.mcpserver`). Die Untergrenze ist hart:
+  2.0.0 hat `mcp.server.fastmcp` ohne Kompatibilitätsschicht entfernt, dieser
+  Code läuft also gar nicht mehr auf 1.x.
+
+  Bestehende Clients sehen keinen Unterschied — der Legacy-`initialize`-Handshake
+  deckelt weiterhin bei 2025-11-25. mcp 2.x bedient zusätzlich eine „moderne"
+  Per-Request-Envelope-Ära, die 2026-07-28 erreicht; ein 2.x-Client verhandelt
+  also die neuere Revision. Kein Bruch, aber auch kein Protokoll-No-op.
+
+- **Die Bind-Adresse erreicht jetzt die App (wäre HTTP 421 geworden).** mcp 2.x
+  schaltet automatisch eine DNS-Rebinding-Allow-List `127.0.0.1:*` scharf, wenn
+  das `host`-Argument der App loopback-artig aussieht. `_build_http_app()` gab
+  keines mit, es blieb also beim Default `127.0.0.1`, während uvicorn an
+  `MCP_HOST` band — ein Container auf `0.0.0.0` hätte **jede** echte Anfrage
+  abgewiesen. `host` und `stateless` reisen jetzt durch `_serve_http()` in die
+  App, beides mit Tests.
+
+- **`stateless_http` ist ein App-Kwarg, keine Setting mehr (SCALE-002/003).**
+  `mcp.settings.stateless_http = True` wirft in 2.x `ValueError`; der aufgelöste
+  Wert wandert deshalb bis `_build_http_app()` durch.
+
+- **`sse_path` / `streamable_http_path` sind aus `MCPServer.settings`
+  verschwunden.** Die Startmeldung liest jetzt lokale Konstanten (`_SSE_PATH`,
+  `_STREAMABLE_HTTP_PATH`), festgenagelt von einem Test gegen die SDK-Defaults —
+  sonst würde eine künftige SDK-Änderung die geloggte URL still falsch machen.
+
+- **`ToolAnnotations`-Feldnamen.** `test_all_tools_declare_readonly_annotations`
+  hat Annotations ohne `by_alias=True` gedumpt und `readOnlyHint` gesucht. 2.x
+  hat die Felder auf snake_case umgestellt, der Lookup fand also nichts und
+  *jedes* Tool sah wie ein Verstoss aus. Jetzt mit Alias gedumpt, konsistent zu
+  `tool_integrity._annotations_dict` — der Alias geht über die Leitung, also ist
+  er auch das Richtige zum Prüfen.
+
+  Geprüft: 2 failed / 117 passed / 6 deselected gegen die 1.x-Baseline von
+  2 failed / 113 passed — die Differenz sind genau die vier neuen Tests. Beide
+  Fehler sind die vorbestehenden `test_tracing`-Fälle (optionale
+  OpenTelemetry-Pakete fehlen), unter mcp 1.x identisch nachgeprüft.
+  `ruff check src/ tests/` und ein Install in einem frischen venv sind grün.
+  **Kein Tool-Vertrag bewegt:** `verify_integrity` gegen das gepinnte
+  `tool_manifest.json` meldet `consistent: True`, nichts hinzugefügt, entfernt
+  oder geändert.
+
 ## [0.3.0] – 2026-06-03
 
 MCP best-practice audit remediation. Audit verification: 41 pass · 0 fail ·
