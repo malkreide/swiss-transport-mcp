@@ -116,6 +116,7 @@ Try it immediately in Claude Desktop:
 | `LOG_FORMAT` | `json` for structured logs (RFC 5424 severity); anything else for human-readable text. Always written to stderr. | `text` |
 | `OTEL_TRACES_ENABLED` | `1` to enable OpenTelemetry tracing (requires the `otel` extra: `pip install 'swiss-transport-mcp[otel]'`). No-op otherwise. | _(off)_ |
 | `MCP_STATELESS` | `1` to run the Streamable HTTP transport statelessly — no server-side session state, so instances need **no sticky load balancing**. Recommended for horizontal scale-out. | _(off → stateful)_ |
+| `MCP_ALLOWED_HOSTS` | Comma-separated list of the names this server is reachable under, port included where it matters (e.g. `fahrplan.example.ch:8080`). Requests arriving under any other `Host` are rejected with **421**; loopback stays allowed so container health checks keep working. Unset on a non-loopback bind, the check is off and a warning is logged. | _(unset → off)_ |
 
 > 🔒 **Egress allow-list:** all outbound requests are restricted to `https://` on `opentransportdata.swiss` hosts. Any other host is refused before a request is sent (SSRF / egress hardening).
 
@@ -338,6 +339,13 @@ identity bound to it. Therefore:
 - Keep the default `MCP_HOST=127.0.0.1` for local use; only bind `0.0.0.0`
   inside a controlled container/cloud environment (see Deployment).
 - Scope `MCP_CORS_ORIGINS` to the origins you actually trust.
+- Set `MCP_ALLOWED_HOSTS` whenever you bind beyond loopback. It guards against
+  **DNS rebinding**: a page on your network resolves its own hostname to this
+  server's address and then talks to it from the browser. CORS does not stop
+  that — from the browser's point of view the request is same-origin — and
+  neither would a token, since the attacking page runs in a context that holds
+  one. Only the `Host` check does. Left unset the check stays off, which is the
+  right default only when something in front of the server validates `Host`.
 
 See [`SECURITY.md`](SECURITY.md) for the full security posture and the
 accepted-risk decisions (gateway-level controls).

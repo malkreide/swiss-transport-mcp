@@ -5,6 +5,40 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **Inbound Host/Origin allow-list for the network transports
+  (`MCP_ALLOWED_HOSTS`, SEC-005).** Comma-separated, compared verbatim so an
+  entry carries its port (e.g. `fahrplan.example.ch:8080`). Anything else is
+  answered with 421. Loopback stays allowed so container health checks keep
+  working, and the configured `MCP_CORS_ORIGINS` are folded into the
+  transport's origin list — otherwise the transport would reject precisely the
+  browser clients CORS was opened for, `https://claude.ai` by default. A `*`
+  origin is not copied across, since origins are compared literally.
+
+  The counterpart to the egress allow-list this server already had: that one
+  decides where it may talk *to*, this one under which name it may be
+  *addressed*. The threat is DNS rebinding — a page on the operator's network
+  resolves its own hostname to this server's address and talks to it from the
+  browser. CORS does not stop it (same-origin from the browser's point of
+  view), and a token would not either, since the attacking page runs in a
+  context that holds one.
+
+  **No behaviour change without the variable.** On a loopback bind the list is
+  now stated explicitly instead of being inferred by the SDK from the bind
+  address — same protection, no longer dependent on that inference. On a
+  non-loopback bind it stays off and is now logged as such. It is deliberately
+  not guessed: on `0.0.0.0` the reachable name is unknowable in-process, and a
+  wrong guess is exactly the HTTP 421 the `host` kwarg exists to avoid.
+
+  Both network transports carry it — Streamable HTTP and the deprecated SSE
+  path — and the served port now travels into the app builder alongside the
+  host, so the allow-list names the port actually served.
+
+- `tests/test_transport_security.py` (17 tests). The load-bearing one is
+  **right hostname, wrong port**: `evil.test` alone proves little, because a
+  fallback loopback-only policy rejects it too.
+
 ## [0.4.0] – 2026-07-30
 
 ### Fixed
