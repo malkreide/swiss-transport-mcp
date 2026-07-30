@@ -30,6 +30,7 @@ from typing import Any
 import anyio
 import httpx
 from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
@@ -1244,11 +1245,71 @@ def _resolve_cors_origins(env: dict[str, str] | None = None) -> list[str]:
     return origins or ["https://claude.ai"]
 
 
+def _resolve_allowed_hosts(env: dict[str, str] | None = None) -> list[str]:
+    """Resolve the inbound Host allow-list (SEC-005).
+
+    ``MCP_ALLOWED_HOSTS`` is a comma-separated list of the names this server is
+    reachable under, port included where it matters, e.g.
+    ``fahrplan.example.ch:8080``. Empty by default.
+    """
+    env = os.environ if env is None else env
+    raw = env.get("MCP_ALLOWED_HOSTS", "").strip()
+    return [h.strip() for h in raw.split(",") if h.strip()]
+
+
+def _build_transport_security(
+    host: str, port: int, origins: list[str], env: dict[str, str] | None = None
+) -> TransportSecuritySettings | None:
+    """Host/Origin allow-list for the network transports (SEC-005).
+
+    Guards against DNS rebinding: a page on the operator's network resolves its
+    own name to this server's address and talks to it from the browser. The
+    check asks under *which name* the server was addressed, which no CORS rule
+    and no token can answer — the attacking page is a legitimate browser
+    context.
+
+    Three cases, in the order decided:
+
+    - ``MCP_ALLOWED_HOSTS`` set — that list, compared verbatim (so an entry
+      carries its port), plus loopback so container health checks keep working.
+    - loopback bind, no list — loopback only. This is what the SDK infers from a
+      loopback ``host`` anyway; stating it makes the protection independent of
+      that inference.
+    - non-loopback bind, no list — ``None``: unchanged behaviour, the check
+      stays off and the caller warns.
+
+    The last case is deliberately not a guess. On ``0.0.0.0`` the reachable name
+    is unknowable in-process, and a wrong guess is exactly the HTTP 421 this
+    server's ``host`` kwarg exists to avoid.
+    """
+    allowed = _resolve_allowed_hosts(env)
+    loopback = {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
+    if allowed:
+        hosts = set(allowed) | loopback
+    elif host in ("127.0.0.1", "localhost", "::1"):
+        hosts = loopback | {f"{host}:{port}"}
+    else:
+        return None
+
+    # Configured CORS origins must pass the transport check too, otherwise the
+    # server rejects precisely the browser clients CORS was opened for —
+    # claude.ai by default here. ``*`` is not expressible: origins are compared
+    # literally, so copying it across would add an entry that permits nothing.
+    allowed_origins = {o for o in origins if o != "*"}
+    allowed_origins |= {f"http://{h}" for h in hosts}
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=sorted(hosts),
+        allowed_origins=sorted(allowed_origins),
+    )
+
+
 def _build_http_app(
     transport: str,
     origins: list[str],
     host: str = "127.0.0.1",
     stateless: bool = False,
+    port: int = 8080,
 ) -> Starlette:
     """Build the Starlette app for a network transport with CORS applied.
 
@@ -1257,16 +1318,31 @@ def _build_http_app(
     MCPServer-configured lifespan (pooled clients, SDK-001) is preserved because
     it is baked into the app returned here.
 
-    ``host`` and ``stateless`` are per-app kwargs in mcp 2.x — in 1.x they were
-    mutable settings. ``host`` must be the address uvicorn actually binds:
-    2.x auto-enables a loopback-only DNS-rebinding allow-list when ``host``
-    looks like localhost, so leaving it at the default while binding 0.0.0.0
-    would reject every real request with HTTP 421.
+    ``host``, ``stateless`` and ``transport_security`` are per-app kwargs in mcp
+    2.x — in 1.x they were mutable settings. ``host`` must be the address
+    uvicorn actually binds: 2.x auto-enables a loopback-only DNS-rebinding
+    allow-list when ``host`` looks like localhost, so leaving it at the default
+    while binding 0.0.0.0 would reject every real request with HTTP 421.
+
+    The allow-list is passed explicitly rather than left to that inference —
+    see :func:`_build_transport_security`.
     """
+    security = _build_transport_security(host, port, origins)
+    if security is None:
+        logger.warning(
+            "Binding %s without MCP_ALLOWED_HOSTS: Host/Origin validation is "
+            "off and left to whatever fronts this server. Set MCP_ALLOWED_HOSTS "
+            "to the names it is reachable under (e.g. 'fahrplan.example.ch:%d') "
+            "to enforce it here as well (SEC-005).",
+            host,
+            port,
+        )
     if transport == "sse":
-        app = mcp.sse_app(host=host)
+        app = mcp.sse_app(host=host, transport_security=security)
     else:
-        app = mcp.streamable_http_app(host=host, stateless_http=stateless)
+        app = mcp.streamable_http_app(
+            host=host, stateless_http=stateless, transport_security=security
+        )
     if "*" in origins:
         logger.warning("MCP_CORS_ORIGINS=* allows ANY origin – avoid in production.")
     app.add_middleware(
@@ -1286,7 +1362,7 @@ async def _serve_http(
     """Serve a network transport via uvicorn with the CORS-wrapped app."""
     import uvicorn
 
-    app = _build_http_app(transport, origins, host=host, stateless=stateless)
+    app = _build_http_app(transport, origins, host=host, stateless=stateless, port=port)
     config = uvicorn.Config(
         app, host=host, port=port, log_level=mcp.settings.log_level.lower()
     )
