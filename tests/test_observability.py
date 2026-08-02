@@ -16,6 +16,7 @@ from swiss_transport_mcp.logging_config import JsonLogFormatter, configure_loggi
 # OBS-002 — upstream response bodies must not reach the LLM
 # ---------------------------------------------------------------------------
 
+
 def _status_error(code: int, body: str) -> httpx.HTTPStatusError:
     request = httpx.Request("GET", "https://api.opentransportdata.swiss/x")
     response = httpx.Response(code, text=body, request=request)
@@ -41,6 +42,7 @@ def test_handle_api_error_known_codes_unchanged():
 # ---------------------------------------------------------------------------
 # OBS-003 — structured logging with RFC 5424 severity
 # ---------------------------------------------------------------------------
+
 
 def test_json_formatter_maps_rfc5424_severity():
     fmt = JsonLogFormatter()
@@ -71,6 +73,7 @@ def test_configure_logging_json_vs_text():
 # ---------------------------------------------------------------------------
 # ARCH-008 — prompt primitive present (tools + resources + prompts)
 # ---------------------------------------------------------------------------
+
 
 def test_prompt_primitive_registered():
     prompts = asyncio.run(server.mcp.list_prompts())

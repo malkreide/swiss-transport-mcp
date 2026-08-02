@@ -16,10 +16,10 @@ from collections.abc import Mapping
 # stdlib level name → RFC 5424 (syslog) numeric severity.
 _RFC5424_SEVERITY: dict[str, int] = {
     "CRITICAL": 2,  # crit
-    "ERROR": 3,     # err
-    "WARNING": 4,   # warning
-    "INFO": 6,      # informational
-    "DEBUG": 7,     # debug
+    "ERROR": 3,  # err
+    "WARNING": 4,  # warning
+    "INFO": 6,  # informational
+    "DEBUG": 7,  # debug
 }
 
 _TEXT_FORMAT = "%(asctime)s %(name)s %(levelname)s: %(message)s"

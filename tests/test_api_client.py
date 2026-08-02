@@ -22,12 +22,11 @@ from swiss_transport_mcp.net_security import EgressNotAllowedError
 # ojp_request (XML POST)
 # ---------------------------------------------------------------------------
 
+
 @respx.mock
 async def test_ojp_request_posts_with_bearer_and_returns_text(monkeypatch):
     monkeypatch.setenv("TRANSPORT_API_KEY", "secret-key")
-    route = respx.post(OJP_V2_URL).mock(
-        return_value=httpx.Response(200, text="<OJP>ok</OJP>")
-    )
+    route = respx.post(OJP_V2_URL).mock(return_value=httpx.Response(200, text="<OJP>ok</OJP>"))
     result = await ojp_request("<request/>")
     assert result == "<OJP>ok</OJP>"
     assert route.called
@@ -55,6 +54,7 @@ async def test_ojp_request_raises_on_http_error(monkeypatch):
 # ckan_request (JSON GET)
 # ---------------------------------------------------------------------------
 
+
 @respx.mock
 async def test_ckan_request_success_returns_result(monkeypatch):
     monkeypatch.setenv("TRANSPORT_API_KEY", "k")
@@ -77,9 +77,7 @@ async def test_ckan_request_403_gives_subscription_hint(monkeypatch):
 async def test_ckan_request_unsuccessful_payload_raises(monkeypatch):
     monkeypatch.setenv("TRANSPORT_API_KEY", "k")
     respx.get(f"{CKAN_API_URL}/package_search").mock(
-        return_value=httpx.Response(
-            200, json={"success": False, "error": {"message": "bad query"}}
-        )
+        return_value=httpx.Response(200, json={"success": False, "error": {"message": "bad query"}})
     )
     with pytest.raises(ValueError, match="bad query"):
         await ckan_request("package_search", {"q": "x"})
@@ -109,6 +107,7 @@ async def test_ckan_request_allows_onsite_base_url_override(monkeypatch):
 # ---------------------------------------------------------------------------
 # handle_api_error mapping
 # ---------------------------------------------------------------------------
+
 
 def _status_error(code: int) -> httpx.HTTPStatusError:
     request = httpx.Request("GET", "https://x")

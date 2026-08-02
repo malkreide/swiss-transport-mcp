@@ -50,6 +50,7 @@ def _no_inherited_allowlist(monkeypatch):
 # Allow-list resolution
 # ---------------------------------------------------------------------------
 
+
 def test_allowed_hosts_default_is_empty():
     assert server._resolve_allowed_hosts(env={}) == []
 
@@ -109,6 +110,7 @@ def test_wildcard_origin_is_not_copied():
 # ---------------------------------------------------------------------------
 # Through the built app
 # ---------------------------------------------------------------------------
+
 
 def _post_init(app, host_header: str) -> int:
     with TestClient(app, raise_server_exceptions=False) as client:
@@ -216,9 +218,7 @@ def test_the_served_port_reaches_the_allowlist(monkeypatch):
 
     monkeypatch.setattr(type(server.mcp), "streamable_http_app", _spy)
     monkeypatch.setattr(uvicorn, "Server", _NoopServer)
-    anyio.run(
-        lambda: server._serve_http("streamable-http", "127.0.0.1", 9102, _ORIGINS)
-    )
+    anyio.run(lambda: server._serve_http("streamable-http", "127.0.0.1", 9102, _ORIGINS))
 
     assert captured["uvicorn_port"] == 9102
     assert "127.0.0.1:9102" in captured["transport_security"].allowed_hosts

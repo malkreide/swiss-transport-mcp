@@ -22,6 +22,7 @@ from swiss_transport_mcp.ojp_client import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def test_escape_xml_neutralises_metacharacters():
     raw = "Z<urich> & \"Bern\" 'HB'"
     escaped = _escape_xml(raw)
@@ -64,6 +65,7 @@ def test_parse_duration_formats():
 # Request builders
 # ---------------------------------------------------------------------------
 
+
 def test_build_location_request_embeds_escaped_query():
     xml = build_location_request("Zürich HB", limit=5)
     assert "Zürich HB" in xml
@@ -99,6 +101,7 @@ def test_build_location_coord_request_inserts_coords():
 # ---------------------------------------------------------------------------
 # Response parser (with a hand-built minimal OJP fixture)
 # ---------------------------------------------------------------------------
+
 
 def _location_fixture() -> str:
     return f"""<?xml version="1.0" encoding="UTF-8"?>

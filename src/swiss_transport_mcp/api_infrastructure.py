@@ -31,6 +31,7 @@ logger = logging.getLogger("swiss-transport-mcp")
 # Rate Limiter – Der Druckminderer
 # =============================================================================
 
+
 @dataclass
 class RateLimiter:
     """
@@ -43,6 +44,7 @@ class RateLimiter:
     Metapher: Wie ein Türsteher, der zählt, wie viele Leute
     in der letzten Minute reingegangen sind.
     """
+
     max_requests: int
     window_seconds: float
     _timestamps: list = field(default_factory=list)
@@ -73,6 +75,7 @@ class RateLimiter:
 # =============================================================================
 # Cache – Der Boiler
 # =============================================================================
+
 
 @dataclass
 class CacheEntry:
@@ -143,6 +146,7 @@ class SimpleCache:
 # API Client – Die Hauptleitung
 # =============================================================================
 
+
 @dataclass
 class APIConfig:
     """
@@ -153,6 +157,7 @@ class APIConfig:
     - Ein eigenes Rate Limit
     - Eine eigene Cache-Dauer (Störungen: kurz, Formationen: länger)
     """
+
     name: str
     base_url: str
     api_key: str
@@ -183,7 +188,7 @@ class TransportAPIClient:
             timeout=30.0,
             follow_redirects=True,  # Wichtig für GTFS-RT!
             verify=resolve_ssl_verify(),
-            headers={"User-Agent": f"swiss-transport-mcp/{__version__}"}
+            headers={"User-Agent": f"swiss-transport-mcp/{__version__}"},
         )
 
     def register_api(self, config: APIConfig):
@@ -214,7 +219,9 @@ class TransportAPIClient:
         """
         config = self._configs.get(api_name)
         if not config:
-            raise ValueError(f"API '{api_name}' nicht registriert. Hast du den API-Key konfiguriert?")
+            raise ValueError(
+                f"API '{api_name}' nicht registriert. Hast du den API-Key konfiguriert?"
+            )
 
         params = params or {}
         url = validate_egress_url(f"{config.base_url}{path}")
@@ -236,6 +243,7 @@ class TransportAPIClient:
                 )
             logger.info(f"Rate Limit für {api_name}: Warte {wait:.1f}s...")
             import asyncio
+
             await asyncio.sleep(wait)
 
         # 3. Request senden
@@ -261,17 +269,23 @@ class TransportAPIClient:
                     f"Prüfe deinen Key im API-Manager: https://api-manager.opentransportdata.swiss/"
                 )
             elif e.response.status_code == 404:
-                raise NotFoundError(f"API '{api_name}': Ressource nicht gefunden (HTTP 404) für {url}")
+                raise NotFoundError(
+                    f"API '{api_name}': Ressource nicht gefunden (HTTP 404) für {url}"
+                )
             else:
                 # OBS-002: log upstream body to stderr, don't surface it.
                 logger.warning(
                     "API '%s' HTTP %s: %s", api_name, e.response.status_code, e.response.text[:500]
                 )
-                raise APIError(f"API '{api_name}': HTTP {e.response.status_code} from upstream service.") from e
+                raise APIError(
+                    f"API '{api_name}': HTTP {e.response.status_code} from upstream service."
+                ) from e
         except httpx.TimeoutException:
             raise APIError(f"API '{api_name}': Timeout nach 30s. Der Server antwortet nicht.")
         except httpx.ConnectError:
-            raise APIError(f"API '{api_name}': Verbindung fehlgeschlagen. Prüfe deine Netzwerkverbindung.")
+            raise APIError(
+                f"API '{api_name}': Verbindung fehlgeschlagen. Prüfe deine Netzwerkverbindung."
+            )
 
         # 4. Antwort verarbeiten
         if "json" in config.content_type or "json" in response.headers.get("content-type", ""):
@@ -315,6 +329,7 @@ class TransportAPIClient:
             if wait > 10:
                 raise RateLimitError(f"API '{api_name}': Rate Limit erreicht. Warte {wait:.0f}s.")
             import asyncio
+
             await asyncio.sleep(wait)
 
         headers = {
@@ -333,7 +348,9 @@ class TransportAPIClient:
             logger.warning(
                 "API '%s' HTTP %s: %s", api_name, e.response.status_code, e.response.text[:500]
             )
-            raise APIError(f"API '{api_name}': HTTP {e.response.status_code} from upstream service.") from e
+            raise APIError(
+                f"API '{api_name}': HTTP {e.response.status_code} from upstream service."
+            ) from e
 
         result = response.text
         self._cache.set(api_name, cache_params, result, config.cache_ttl)
@@ -348,26 +365,35 @@ class TransportAPIClient:
 # Fehlerklassen – Klare Diagnose statt kryptische Meldungen
 # =============================================================================
 
+
 class APIError(Exception):
     """Allgemeiner API-Fehler."""
+
     pass
+
 
 class RateLimitError(APIError):
     """Rate Limit überschritten."""
+
     pass
+
 
 class AuthenticationError(APIError):
     """API-Key ungültig oder fehlend."""
+
     pass
+
 
 class NotFoundError(APIError):
     """Ressource nicht gefunden."""
+
     pass
 
 
 # =============================================================================
 # Factory – Erstellt den konfigurierten Client
 # =============================================================================
+
 
 def create_transport_client(
     siri_sx_key: str | None = None,
@@ -390,43 +416,51 @@ def create_transport_client(
     client = TransportAPIClient()
 
     if siri_sx_key:
-        client.register_api(APIConfig(
-            name="siri_sx",
-            base_url="https://api.opentransportdata.swiss/la/siri-sx",
-            api_key=siri_sx_key,
-            rate_limit=RateLimiter(max_requests=2, window_seconds=60),
-            cache_ttl=120,
-            content_type="application/xml",
-        ))
+        client.register_api(
+            APIConfig(
+                name="siri_sx",
+                base_url="https://api.opentransportdata.swiss/la/siri-sx",
+                api_key=siri_sx_key,
+                rate_limit=RateLimiter(max_requests=2, window_seconds=60),
+                cache_ttl=120,
+                content_type="application/xml",
+            )
+        )
 
     if occupancy_key:
-        client.register_api(APIConfig(
-            name="occupancy",
-            base_url="https://api.opentransportdata.swiss/ckan-api",
-            api_key=occupancy_key,
-            rate_limit=RateLimiter(max_requests=2, window_seconds=60),
-            cache_ttl=300,
-            content_type="application/json",
-        ))
+        client.register_api(
+            APIConfig(
+                name="occupancy",
+                base_url="https://api.opentransportdata.swiss/ckan-api",
+                api_key=occupancy_key,
+                rate_limit=RateLimiter(max_requests=2, window_seconds=60),
+                cache_ttl=300,
+                content_type="application/json",
+            )
+        )
 
     if formation_key:
-        client.register_api(APIConfig(
-            name="formation",
-            base_url="https://api.opentransportdata.swiss/formation/v2",
-            api_key=formation_key,
-            rate_limit=RateLimiter(max_requests=5, window_seconds=60),
-            cache_ttl=600,
-            content_type="application/json",
-        ))
+        client.register_api(
+            APIConfig(
+                name="formation",
+                base_url="https://api.opentransportdata.swiss/formation/v2",
+                api_key=formation_key,
+                rate_limit=RateLimiter(max_requests=5, window_seconds=60),
+                cache_ttl=600,
+                content_type="application/json",
+            )
+        )
 
     if ojp_fare_key:
-        client.register_api(APIConfig(
-            name="ojp_fare",
-            base_url="https://api.opentransportdata.swiss/ojp20",
-            api_key=ojp_fare_key,
-            rate_limit=RateLimiter(max_requests=5, window_seconds=60),
-            cache_ttl=1800,
-            content_type="application/xml",
-        ))
+        client.register_api(
+            APIConfig(
+                name="ojp_fare",
+                base_url="https://api.opentransportdata.swiss/ojp20",
+                api_key=ojp_fare_key,
+                rate_limit=RateLimiter(max_requests=5, window_seconds=60),
+                cache_ttl=1800,
+                content_type="application/xml",
+            )
+        )
 
     return client

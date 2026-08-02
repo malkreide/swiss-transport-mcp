@@ -101,6 +101,7 @@ def _get_ckan_key() -> str:
 # OJP API (XML/SOAP)
 # ---------------------------------------------------------------------------
 
+
 async def ojp_request(xml_body: str, version: str = "v2") -> str:
     """Send an OJP XML request and return the XML response.
 
@@ -125,7 +126,9 @@ async def ojp_request(xml_body: str, version: str = "v2") -> str:
 
     async with _http_client(OJP_TIMEOUT) as client:
         with span("ojp.request", **{"http.method": "POST", "ojp.version": version}):
-            response = await client.post(url, content=xml_body, headers=headers, timeout=OJP_TIMEOUT)
+            response = await client.post(
+                url, content=xml_body, headers=headers, timeout=OJP_TIMEOUT
+            )
             response.raise_for_status()
             return response.text
 
@@ -133,6 +136,7 @@ async def ojp_request(xml_body: str, version: str = "v2") -> str:
 # ---------------------------------------------------------------------------
 # CKAN API (REST/JSON)
 # ---------------------------------------------------------------------------
+
 
 async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     """Make a CKAN API request.
@@ -163,7 +167,9 @@ async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dic
 
     async with _http_client(DEFAULT_TIMEOUT) as client:
         with span("ckan.request", **{"http.method": "GET", "ckan.action": action}):
-            response = await client.get(url, params=params or {}, headers=headers, timeout=DEFAULT_TIMEOUT)
+            response = await client.get(
+                url, params=params or {}, headers=headers, timeout=DEFAULT_TIMEOUT
+            )
 
             if response.status_code == 403:
                 raise ValueError(
@@ -186,6 +192,7 @@ async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dic
 # ---------------------------------------------------------------------------
 # Error handling
 # ---------------------------------------------------------------------------
+
 
 def handle_api_error(e: Exception) -> str:
     """Format API errors into user-friendly messages."""

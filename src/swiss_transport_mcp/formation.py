@@ -98,15 +98,16 @@ async def get_train_formation(
     evu_upper = evu.upper()
     if evu_upper not in EVU_MAP:
         available = ", ".join(f"{k} ({v})" for k, v in EVU_MAP.items())
-        return (
-            f"⚠️ Unbekanntes EVU '{evu}'. Verfügbare Eisenbahnunternehmen:\n{available}"
-        )
+        return f"⚠️ Unbekanntes EVU '{evu}'. Verfügbare Eisenbahnunternehmen:\n{available}"
 
     # Zugnummer bereinigen
     import re
-    clean_number = re.sub(r'[^\d]', '', train_number)
+
+    clean_number = re.sub(r"[^\d]", "", train_number)
     if not clean_number:
-        return f"⚠️ Ungültige Zugnummer: '{train_number}'. Bitte nur die Nummer angeben (z.B. '2806')."
+        return (
+            f"⚠️ Ungültige Zugnummer: '{train_number}'. Bitte nur die Nummer angeben (z.B. '2806')."
+        )
 
     # Endpoint wählen
     endpoint_map = {
@@ -164,8 +165,7 @@ def _format_formation(
 ) -> str:
     """Formatiert die Formation als lesbaren Text."""
     lines = [
-        f"🚆 Zugformation {display_name} ({EVU_MAP.get(evu, evu)}) "
-        f"am {_format_date(op_date)}:\n"
+        f"🚆 Zugformation {display_name} ({EVU_MAP.get(evu, evu)}) am {_format_date(op_date)}:\n"
     ]
 
     # Meta-Informationen
@@ -277,21 +277,24 @@ def _explain_formation_string(short: str) -> str:
     import re
 
     # Sektoren finden (einzelne Grossbuchstaben)
-    sectors = re.findall(r'[A-Z](?=[[\]]|$)', short)
+    sectors = re.findall(r"[A-Z](?=[[\]]|$)", short)
     if sectors:
-        explanation_parts.append(f"  Sektoren: {' bis '.join([sectors[0], sectors[-1]]) if len(sectors) > 1 else sectors[0]}")
+        explanation_parts.append(
+            f"  Sektoren: {' bis '.join([sectors[0], sectors[-1]]) if len(sectors) > 1 else sectors[0]}"
+        )
 
     # Fahrzeugtypen zählen
-    types_found = re.findall(r'(?:1|2|12|CC|FA|WL|WR|W1|W2|LK|D|F|K|X)', short)
+    types_found = re.findall(r"(?:1|2|12|CC|FA|WL|WR|W1|W2|LK|D|F|K|X)", short)
     type_counts = {}
     for t in types_found:
         label = VEHICLE_TYPES.get(t, t)
         type_counts[label] = type_counts.get(label, 0) + 1
 
     if type_counts:
-        explanation_parts.append("  Zusammensetzung: " + ", ".join(
-            f"{count}× {label}" for label, count in type_counts.items()
-        ))
+        explanation_parts.append(
+            "  Zusammensetzung: "
+            + ", ".join(f"{count}× {label}" for label, count in type_counts.items())
+        )
 
     # Status-Zeichen
     if ">" in short:
@@ -321,6 +324,7 @@ def _format_time(time_str: str) -> str:
         return "?"
     try:
         from datetime import datetime
+
         dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
         return dt.strftime("%H:%M")
     except (ValueError, TypeError):

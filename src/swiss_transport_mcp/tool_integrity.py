@@ -82,9 +82,7 @@ def verify_integrity(current: dict[str, str], pinned: dict[str, str]) -> dict[st
 
 def write_manifest(fingerprints: dict[str, str], path: Path = MANIFEST_PATH) -> None:
     """Persist a manifest (used to (re)generate the pin after a reviewed change)."""
-    path.write_text(
-        json.dumps(fingerprints, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    path.write_text(json.dumps(fingerprints, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def check_tools_against_manifest(tools: list[Any]) -> dict[str, Any]:
@@ -103,6 +101,8 @@ def check_tools_against_manifest(tools: list[Any]) -> dict[str, Any]:
         logger.warning(
             "Tool integrity drift (SEC-022): added=%s removed=%s changed=%s. "
             "If this change is intentional, regenerate tool_manifest.json.",
-            result["added"], result["removed"], result["changed"],
+            result["added"],
+            result["removed"],
+            result["changed"],
         )
     return result

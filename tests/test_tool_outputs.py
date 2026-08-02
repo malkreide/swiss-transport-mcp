@@ -109,9 +109,7 @@ async def test_search_datasets_typed(monkeypatch):
             ],
         },
     }
-    respx.get(f"{CKAN_API_URL}/package_search").mock(
-        return_value=httpx.Response(200, json=payload)
-    )
+    respx.get(f"{CKAN_API_URL}/package_search").mock(return_value=httpx.Response(200, json=payload))
     result = await transport_search_datasets(DatasetSearchInput(query="gtfs"))
     assert isinstance(result, DatasetSearchResult)
     assert result.total_found == 1
@@ -135,9 +133,7 @@ async def test_get_dataset_typed(monkeypatch):
             "resources": [{"name": "API", "format": "XML", "url": "https://x", "size": None}],
         },
     }
-    respx.get(f"{CKAN_API_URL}/package_show").mock(
-        return_value=httpx.Response(200, json=payload)
-    )
+    respx.get(f"{CKAN_API_URL}/package_show").mock(return_value=httpx.Response(200, json=payload))
     result = await transport_get_dataset(DatasetDetailInput(dataset_id="ojp2-0"))
     assert isinstance(result, DatasetDetailResult)
     assert result.id == "ojp2-0"

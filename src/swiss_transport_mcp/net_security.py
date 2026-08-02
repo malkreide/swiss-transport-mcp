@@ -44,9 +44,7 @@ class EgressNotAllowedError(ValueError):
     """Raised when an outbound URL violates the egress policy (scheme/host)."""
 
 
-def validate_egress_url(
-    url: str, *, allowed_hosts: frozenset[str] = ALLOWED_EGRESS_HOSTS
-) -> str:
+def validate_egress_url(url: str, *, allowed_hosts: frozenset[str] = ALLOWED_EGRESS_HOSTS) -> str:
     """Return ``url`` unchanged if it is allowed, else raise.
 
     A URL is allowed only when its scheme is ``https`` and its host is on the
@@ -60,8 +58,7 @@ def validate_egress_url(
     host = (parsed.hostname or "").lower()
     if host not in allowed_hosts:
         raise EgressNotAllowedError(
-            f"Egress to host '{host}' is not permitted. "
-            f"Allowed hosts: {sorted(allowed_hosts)}"
+            f"Egress to host '{host}' is not permitted. Allowed hosts: {sorted(allowed_hosts)}"
         )
     return url
 

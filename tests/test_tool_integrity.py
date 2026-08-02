@@ -19,6 +19,7 @@ def _tools():
 # ARCH-009 — every tool declares annotations (incl. the extension tools)
 # ---------------------------------------------------------------------------
 
+
 def test_all_tools_declare_readonly_annotations():
     """Every tool must advertise `readOnlyHint: true` to clients.
 
@@ -41,6 +42,7 @@ def test_all_tools_declare_readonly_annotations():
 # ---------------------------------------------------------------------------
 # SEC-022 — live tool surface matches the pinned manifest
 # ---------------------------------------------------------------------------
+
 
 def test_live_fingerprint_matches_pinned_manifest():
     pinned = load_pinned_manifest()
@@ -75,6 +77,7 @@ def test_verify_integrity_flags_drift():
 # ---------------------------------------------------------------------------
 # SCALE-002/003 — stateless resolver
 # ---------------------------------------------------------------------------
+
 
 def test_stateless_default_off():
     assert server._resolve_stateless(env={}) is False

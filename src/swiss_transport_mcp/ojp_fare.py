@@ -69,7 +69,12 @@ async def get_fare_info(
         trip_response = await client.post_xml(
             "ojp_fare",
             trip_xml,
-            cache_key_params={"type": "trip", "from": origin, "to": destination, "time": departure_time[:13]},
+            cache_key_params={
+                "type": "trip",
+                "from": origin,
+                "to": destination,
+                "time": departure_time[:13],
+            },
         )
     except APIError as e:
         return f"⚠️ Routenberechnung fehlgeschlagen: {e}"
@@ -90,7 +95,12 @@ async def get_fare_info(
         fare_response = await client.post_xml(
             "ojp_fare",
             fare_xml,
-            cache_key_params={"type": "fare", "from": origin, "to": destination, "class": traveller_class},
+            cache_key_params={
+                "type": "fare",
+                "from": origin,
+                "to": destination,
+                "class": traveller_class,
+            },
         )
     except APIError as e:
         # Wenn Fare-Abfrage fehlschlägt, geben wir wenigstens die Route zurück
@@ -147,6 +157,7 @@ async def get_simple_fare(
 # =============================================================================
 # XML-Builder – Baut die OJP-Requests
 # =============================================================================
+
 
 def _build_trip_request(origin: str, destination: str, dep_time: str, requestor_ref: str) -> str:
     """
@@ -269,6 +280,7 @@ def _build_direct_fare_request(origin_ref: str, destination_ref: str, requestor_
 # XML-Parser – Liest die OJP-Antworten
 # =============================================================================
 
+
 def _parse_trip_response(xml_text: str) -> list[dict]:
     """Parst die OJP TripDelivery und extrahiert Trips."""
     try:
@@ -301,7 +313,9 @@ def _parse_trip_response(xml_text: str) -> list[dict]:
 
 def _extract_leg(leg_element: ET.Element) -> dict | None:
     """Extrahiert ein Leg (Teilstrecke) aus dem TripResult."""
-    origin_name = _find_text(leg_element, "LegStart") or _find_deep_text(leg_element, "LegStart", "Name")
+    origin_name = _find_text(leg_element, "LegStart") or _find_deep_text(
+        leg_element, "LegStart", "Name"
+    )
     dest_name = _find_text(leg_element, "LegEnd") or _find_deep_text(leg_element, "LegEnd", "Name")
     origin_ref = _find_deep_text(leg_element, "LegStart", "StopPointRef") or ""
     dest_ref = _find_deep_text(leg_element, "LegEnd", "StopPointRef") or ""
@@ -343,7 +357,9 @@ def _parse_fare_response(xml_text: str) -> list[dict]:
     for fare_result in _find_all_elements(root, "FareResult"):
         for product in _find_all_elements(fare_result, "FareProduct"):
             fare = {
-                "name": _find_text(product, "FareProductName") or _find_text(product, "Name") or "Ticket",
+                "name": _find_text(product, "FareProductName")
+                or _find_text(product, "Name")
+                or "Ticket",
                 "amount": _find_text(product, "Amount") or _find_text(product, "Price") or "?",
                 "currency": _find_text(product, "Currency") or "CHF",
                 "fare_class": _find_text(product, "FareClass") or "",
@@ -357,13 +373,15 @@ def _parse_fare_response(xml_text: str) -> list[dict]:
             amount = _find_text(price_el, "Amount") or ""
             currency = _find_text(price_el, "Currency") or "CHF"
             if amount:
-                fares.append({
-                    "name": "Einzelbillett",
-                    "amount": amount,
-                    "currency": currency,
-                    "fare_class": "",
-                    "validity": "",
-                })
+                fares.append(
+                    {
+                        "name": "Einzelbillett",
+                        "amount": amount,
+                        "currency": currency,
+                        "fare_class": "",
+                        "validity": "",
+                    }
+                )
 
     return fares
 
@@ -371,6 +389,7 @@ def _parse_fare_response(xml_text: str) -> list[dict]:
 # =============================================================================
 # XML-Hilfsfunktionen (robustes Parsing trotz wechselnder Namespaces)
 # =============================================================================
+
 
 def _find_all_elements(root: ET.Element, tag: str) -> list:
     """Findet alle Elemente mit einem Tag, unabhängig vom Namespace."""
@@ -403,6 +422,7 @@ def _find_deep_text(parent: ET.Element, container_tag: str, child_tag: str) -> s
 # =============================================================================
 # Formatierung
 # =============================================================================
+
 
 def _format_fare_result(
     origin: str,
