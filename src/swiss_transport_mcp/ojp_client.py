@@ -43,6 +43,7 @@ def _escape_xml(text: str) -> str:
 # Namespace-aware XPath helpers
 # ---------------------------------------------------------------------------
 
+
 def _qn(tag: str) -> str:
     """Qualify a tag name with namespace.
     'siri:Longitude' → '{http://...siri}Longitude'
@@ -59,6 +60,7 @@ def _xpath(path: str) -> str:
     './/siri:Longitude'     → './/{...siri}Longitude'
     './/Service/Mode/PtMode' → './/{...}Service/{...}Mode/{...}PtMode'
     """
+
     def replace_tag(m):
         tag = m.group(0)
         if tag in (".", "..", ""):
@@ -66,7 +68,7 @@ def _xpath(path: str) -> str:
         return _qn(tag)
 
     # Replace each tag-like segment (word chars and colons between slashes)
-    return re.sub(r'[a-zA-Z_:][\w:]*', replace_tag, path)
+    return re.sub(r"[a-zA-Z_:][\w:]*", replace_tag, path)
 
 
 def _find(el: ET.Element, path: str) -> ET.Element | None:
@@ -89,6 +91,7 @@ def _text(el: ET.Element, path: str) -> str | None:
 # Request builders
 # ---------------------------------------------------------------------------
 
+
 def build_location_request(query: str, limit: int = 10) -> str:
     template = _load_template("location_request.xml")
     return template.format(timestamp=_now_iso(), query=_escape_xml(query), limit=limit)
@@ -96,24 +99,36 @@ def build_location_request(query: str, limit: int = 10) -> str:
 
 def build_location_coord_request(latitude: float, longitude: float, limit: int = 10) -> str:
     template = _load_template("location_coord_request.xml")
-    return template.format(timestamp=_now_iso(), latitude=latitude, longitude=longitude, limit=limit)
+    return template.format(
+        timestamp=_now_iso(), latitude=latitude, longitude=longitude, limit=limit
+    )
 
 
 def build_stop_event_request(
-    stop_ref: str, stop_name: str = "", dep_arr_time: str | None = None,
-    limit: int = 10, event_type: str = "departure",
+    stop_ref: str,
+    stop_name: str = "",
+    dep_arr_time: str | None = None,
+    limit: int = 10,
+    event_type: str = "departure",
 ) -> str:
     template = _load_template("stop_event_request.xml")
     return template.format(
-        timestamp=_now_iso(), place_ref=_build_place_ref(stop_ref),
+        timestamp=_now_iso(),
+        place_ref=_build_place_ref(stop_ref),
         stop_name=_escape_xml(stop_name or stop_ref),
-        dep_arr_time=dep_arr_time or _now_iso(), limit=limit, event_type=event_type,
+        dep_arr_time=dep_arr_time or _now_iso(),
+        limit=limit,
+        event_type=event_type,
     )
 
 
 def build_trip_request(
-    origin_ref: str, destination_ref: str, origin_name: str = "",
-    destination_name: str = "", dep_time: str | None = None, limit: int = 5,
+    origin_ref: str,
+    destination_ref: str,
+    origin_name: str = "",
+    destination_name: str = "",
+    dep_time: str | None = None,
+    limit: int = 5,
 ) -> str:
     template = _load_template("trip_request.xml")
     return template.format(
@@ -122,7 +137,8 @@ def build_trip_request(
         origin_name=_escape_xml(origin_name or origin_ref),
         destination_ref=_build_place_ref(destination_ref),
         destination_name=_escape_xml(destination_name or destination_ref),
-        dep_time=dep_time or _now_iso(), limit=limit,
+        dep_time=dep_time or _now_iso(),
+        limit=limit,
     )
 
 
@@ -137,6 +153,7 @@ def _build_place_ref(ref: str) -> str:
 # ---------------------------------------------------------------------------
 # Response parsers
 # ---------------------------------------------------------------------------
+
 
 def parse_location_response(xml_text: str) -> list[dict[str, Any]]:
     root = ET.fromstring(xml_text)
@@ -400,7 +417,11 @@ def _parse_duration(iso_duration: str) -> str:
 def parse_error_response(xml_text: str) -> str | None:
     try:
         root = ET.fromstring(xml_text)
-        for ns, tag in [(OJP, "ErrorCondition"), (SIRI, "ErrorCondition"), (OJP, "ServiceNotAvailableError")]:
+        for ns, tag in [
+            (OJP, "ErrorCondition"),
+            (SIRI, "ErrorCondition"),
+            (OJP, "ServiceNotAvailableError"),
+        ]:
             for error in root.iter(f"{{{ns}}}{tag}"):
                 for desc_tag in ["Description", f"{{{SIRI}}}Description", f"{{{OJP}}}Description"]:
                     desc = error.find(desc_tag)

@@ -68,9 +68,7 @@ def configure_tracing(env: Mapping[str, str] | None = None) -> bool:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
-    provider = TracerProvider(
-        resource=Resource.create({"service.name": "swiss-transport-mcp"})
-    )
+    provider = TracerProvider(resource=Resource.create({"service.name": "swiss-transport-mcp"}))
     # stderr exporter so stdout stays clean for the stdio transport (OBS-004).
     provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter(out=sys.stderr)))
     _otel_trace.set_tracer_provider(provider)

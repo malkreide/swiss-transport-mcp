@@ -24,6 +24,7 @@ SRC_DIR = Path(server.__file__).parent
 # SEC-018 — input validation at tool boundaries
 # ---------------------------------------------------------------------------
 
+
 def test_search_stop_accepts_valid():
     m = SearchStopInput(query="Bern", limit=5)
     assert m.query == "Bern"
@@ -72,6 +73,7 @@ def test_trip_requires_both_endpoints():
 # SEC-016 — network listener must default to loopback
 # ---------------------------------------------------------------------------
 
+
 def test_http_bind_defaults_to_loopback():
     host, port = _resolve_http_bind(env={})
     assert host == "127.0.0.1"
@@ -92,6 +94,7 @@ def test_http_bind_port_from_env_and_platform_port():
 # ---------------------------------------------------------------------------
 # SCALE-001 — transport resolution (Streamable HTTP is the cloud default)
 # ---------------------------------------------------------------------------
+
 
 def test_transport_defaults_to_stdio():
     assert _resolve_transport(env={}) == "stdio"
@@ -114,6 +117,7 @@ def test_transport_unknown_passed_through_for_main_to_handle():
 # ---------------------------------------------------------------------------
 # OBS-004 — stdout reserved for the JSON-RPC stream (no stray print())
 # ---------------------------------------------------------------------------
+
 
 def test_no_print_statements_in_src():
     offenders = []

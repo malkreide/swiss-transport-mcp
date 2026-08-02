@@ -4,7 +4,6 @@ Pure logic, no network. Time-dependent behaviour is driven via monkeypatched
 clocks so the tests are deterministic and fast.
 """
 
-
 import pytest
 
 from swiss_transport_mcp import api_infrastructure
@@ -18,6 +17,7 @@ from swiss_transport_mcp.api_infrastructure import (
 # ---------------------------------------------------------------------------
 # RateLimiter
 # ---------------------------------------------------------------------------
+
 
 def test_rate_limiter_allows_up_to_limit():
     rl = RateLimiter(max_requests=2, window_seconds=60)
@@ -60,6 +60,7 @@ def test_rate_limiter_wait_time_positive_when_blocked(monkeypatch):
 # SimpleCache
 # ---------------------------------------------------------------------------
 
+
 def test_cache_hit_and_miss():
     cache = SimpleCache()
     assert cache.get("siri", {"q": "x"}) is None
@@ -101,6 +102,7 @@ def test_cache_clear():
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
+
 
 def test_factory_registers_only_keyed_apis():
     client = create_transport_client(siri_sx_key="k1", formation_key="k2")

@@ -13,6 +13,7 @@ from swiss_transport_mcp.net_security import (
 # validate_egress_url — HTTPS enforcement + host allow-list
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "url",
     [
@@ -40,9 +41,9 @@ def test_rejects_file_and_other_schemes():
     [
         "https://evil.example.com/steal",
         "https://api.opentransportdata.swiss.evil.com/x",  # suffix trick
-        "https://169.254.169.254/latest/meta-data/",        # cloud metadata
-        "https://127.0.0.1/admin",                          # localhost
-        "https://10.0.0.5/internal",                        # private range
+        "https://169.254.169.254/latest/meta-data/",  # cloud metadata
+        "https://127.0.0.1/admin",  # localhost
+        "https://10.0.0.5/internal",  # private range
     ],
 )
 def test_rejects_offsite_and_internal_hosts(url):
@@ -63,6 +64,7 @@ def test_allowlist_is_minimal():
 # resolve_ssl_verify — TLS verification guard
 # ---------------------------------------------------------------------------
 
+
 def test_ssl_verify_default_true():
     assert resolve_ssl_verify(env={}) is True
 
@@ -75,20 +77,14 @@ def test_ssl_verify_disable_ignored_in_production():
     # No dev marker → disabling is refused, verification stays ON.
     assert resolve_ssl_verify(env={"TRANSPORT_SSL_VERIFY": "false"}) is True
     assert (
-        resolve_ssl_verify(env={"TRANSPORT_SSL_VERIFY": "false", "MCP_ENV": "production"})
-        is True
+        resolve_ssl_verify(env={"TRANSPORT_SSL_VERIFY": "false", "MCP_ENV": "production"}) is True
     )
 
 
 @pytest.mark.parametrize("dev_env", ["dev", "development", "local", "test"])
 def test_ssl_verify_disable_allowed_in_dev(dev_env):
-    assert (
-        resolve_ssl_verify(env={"TRANSPORT_SSL_VERIFY": "false", "MCP_ENV": dev_env})
-        is False
-    )
+    assert resolve_ssl_verify(env={"TRANSPORT_SSL_VERIFY": "false", "MCP_ENV": dev_env}) is False
 
 
 def test_ssl_verify_honours_env_alias():
-    assert (
-        resolve_ssl_verify(env={"TRANSPORT_SSL_VERIFY": "false", "ENV": "dev"}) is False
-    )
+    assert resolve_ssl_verify(env={"TRANSPORT_SSL_VERIFY": "false", "ENV": "dev"}) is False

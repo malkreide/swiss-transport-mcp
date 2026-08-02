@@ -128,7 +128,9 @@ def _parse_siri_sx(
     # Formatieren
     lines = [f"🚨 {len(disruptions)} aktive Störung(en) im Schweizer ÖV:\n"]
     for i, d in enumerate(disruptions, 1):
-        severity_icon = {"severe": "🔴", "normal": "🟡", "slight": "🟢", "noImpact": "⚪"}.get(d["severity"], "⚪")
+        severity_icon = {"severe": "🔴", "normal": "🟡", "slight": "🟢", "noImpact": "⚪"}.get(
+            d["severity"], "⚪"
+        )
         lines.append(f"--- Störung {i} ---")
         lines.append(f"{severity_icon} Schweregrad: {d['severity']}")
         lines.append(f"📋 {d['title']}")

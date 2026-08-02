@@ -145,7 +145,9 @@ async def get_occupancy_for_route(
             for train in data["trains"]:
                 sections = train.get("sections", [])
                 stations = [s.get("departureStationName", "").lower() for s in sections]
-                stations.append(sections[-1].get("destinationStationName", "").lower() if sections else "")
+                stations.append(
+                    sections[-1].get("destinationStationName", "").lower() if sections else ""
+                )
 
                 # Prüfe ob Abfahrt und Ankunft in der Route vorkommen
                 dep_found = any(dep_lower in st for st in stations)
@@ -155,11 +157,13 @@ async def get_occupancy_for_route(
                     # Nur relevante Abschnitte extrahieren
                     relevant = _filter_sections(sections, dep_lower, arr_lower)
                     if relevant:
-                        results.append({
-                            "train_number": train.get("trainNumber", "?"),
-                            "operator": OPERATOR_MAP.get(operator_ref, operator_ref),
-                            "sections": relevant,
-                        })
+                        results.append(
+                            {
+                                "train_number": train.get("trainNumber", "?"),
+                                "operator": OPERATOR_MAP.get(operator_ref, operator_ref),
+                                "sections": relevant,
+                            }
+                        )
 
             if len(results) >= 10:
                 break
@@ -194,6 +198,7 @@ async def get_occupancy_for_route(
 # =============================================================================
 # Interne Hilfsfunktionen
 # =============================================================================
+
 
 async def _fetch_occupancy_data(
     client: TransportAPIClient,
@@ -230,6 +235,7 @@ async def _fetch_occupancy_data(
                 if target_name in name and url.endswith(".json"):
                     # Datei direkt herunterladen
                     import httpx
+
                     async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as dl_client:
                         resp = await dl_client.get(url)
                         resp.raise_for_status()
@@ -245,6 +251,7 @@ async def _fetch_occupancy_data(
                 f"{OCCUPANCY_DATASET}/download/{operator_ref}_{operation_date}.json"
             )
             import httpx
+
             async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as dl_client:
                 resp = await dl_client.get(direct_url)
                 if resp.status_code == 200:
@@ -265,10 +272,13 @@ def _clean_train_number(raw: str) -> str:
     - "1009" → "1009"
     """
     import re
+
     # Entferne gängige Zugtyp-Präfixe
-    cleaned = re.sub(r'^(IC|IR|RE|S\d*|EC|EN|TGV|ICE|RJX)\s*\d*\s*', '', raw.strip(), flags=re.IGNORECASE)
+    cleaned = re.sub(
+        r"^(IC|IR|RE|S\d*|EC|EN|TGV|ICE|RJX)\s*\d*\s*", "", raw.strip(), flags=re.IGNORECASE
+    )
     # Wenn nur Zahlen übrig: gut. Sonst: Original-Zahl extrahieren
-    numbers = re.findall(r'\d+', cleaned or raw)
+    numbers = re.findall(r"\d+", cleaned or raw)
     return numbers[-1] if numbers else raw.strip()
 
 
@@ -328,8 +338,7 @@ def _format_occupancy(train: dict, display_name: str, operator_ref: str, op_date
     operator = OPERATOR_MAP.get(operator_ref, operator_ref)
 
     lines = [
-        f"📊 Auslastungsprognose Zug {display_name} ({operator}) "
-        f"am {_format_date(op_date)}:\n"
+        f"📊 Auslastungsprognose Zug {display_name} ({operator}) am {_format_date(op_date)}:\n"
     ]
 
     for s in sections:

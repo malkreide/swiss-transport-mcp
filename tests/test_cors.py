@@ -10,6 +10,7 @@ from swiss_transport_mcp import server
 # Origin resolution
 # ---------------------------------------------------------------------------
 
+
 def test_default_origin_is_claude_ai():
     assert server._resolve_cors_origins(env={}) == ["https://claude.ai"]
 
@@ -22,9 +23,7 @@ def test_origins_from_comma_separated_env():
 
 
 def test_blank_env_falls_back_to_default():
-    assert server._resolve_cors_origins(env={"MCP_CORS_ORIGINS": "  "}) == [
-        "https://claude.ai"
-    ]
+    assert server._resolve_cors_origins(env={"MCP_CORS_ORIGINS": "  "}) == ["https://claude.ai"]
 
 
 def test_wildcard_origin_supported():
@@ -34,6 +33,7 @@ def test_wildcard_origin_supported():
 # ---------------------------------------------------------------------------
 # Middleware wiring
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("transport", ["streamable-http", "sse"])
 def test_app_has_cors_exposing_session_id(transport):
@@ -50,6 +50,7 @@ def test_app_has_cors_exposing_session_id(transport):
 # ---------------------------------------------------------------------------
 # Preflight behaviour (end to end through the built app)
 # ---------------------------------------------------------------------------
+
 
 def test_preflight_allows_configured_origin_and_rejects_others():
     # One TestClient session: the StreamableHTTP session manager can only be
@@ -79,6 +80,7 @@ def test_preflight_allows_configured_origin_and_rejects_others():
 # mcp 2.x per-app kwargs (were mutable settings in 1.x)
 # ---------------------------------------------------------------------------
 
+
 def test_endpoint_path_constants_match_sdk_defaults():
     """The startup log line prints these paths; the app uses the SDK defaults.
 
@@ -93,9 +95,7 @@ def test_endpoint_path_constants_match_sdk_defaults():
 
     sse_default = inspect.signature(MCPServer.sse_app).parameters["sse_path"].default
     http_default = (
-        inspect.signature(MCPServer.streamable_http_app)
-        .parameters["streamable_http_path"]
-        .default
+        inspect.signature(MCPServer.streamable_http_app).parameters["streamable_http_path"].default
     )
     assert server._SSE_PATH == sse_default
     assert server._STREAMABLE_HTTP_PATH == http_default
@@ -145,6 +145,8 @@ def test_bind_host_is_passed_through_to_the_app(monkeypatch):
 
     monkeypatch.setattr(type(server.mcp), "streamable_http_app", _spy)
     server._build_http_app(
-        "streamable-http", ["https://claude.ai"], host="0.0.0.0"  # noqa: S104
+        "streamable-http",
+        ["https://claude.ai"],
+        host="0.0.0.0",  # noqa: S104
     )
     assert captured["host"] == "0.0.0.0"  # noqa: S104

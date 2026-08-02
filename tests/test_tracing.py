@@ -32,7 +32,9 @@ def test_span_is_noop_when_disabled():
         assert sp is None
 
 
-@pytest.mark.parametrize("value,expected", [("1", True), ("true", True), ("on", True), ("0", False), ("", False)])
+@pytest.mark.parametrize(
+    "value,expected", [("1", True), ("true", True), ("on", True), ("0", False), ("", False)]
+)
 def test_truthy_parsing(value, expected):
     assert tracing._is_truthy(value) is expected
 

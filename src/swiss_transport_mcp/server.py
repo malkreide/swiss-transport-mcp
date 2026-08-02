@@ -162,6 +162,7 @@ def _check_api(api_name: str, env_var: str) -> str | None:
 # Input models – Core Tools (OJP + CKAN)
 # ===========================================================================
 
+
 class SearchStopInput(BaseModel):
     """Input for searching stops/stations."""
 
@@ -391,6 +392,7 @@ class DatasetDetailResult(BaseModel):
 # Tool 1: Search stops by name
 # ---------------------------------------------------------------------------
 
+
 @mcp.tool(
     name="transport_search_stop",
     annotations={
@@ -444,6 +446,7 @@ async def transport_search_stop(params: SearchStopInput) -> StopSearchResult:
 # ---------------------------------------------------------------------------
 # Tool 1b: Search stops by coordinates
 # ---------------------------------------------------------------------------
+
 
 @mcp.tool(
     name="transport_nearby_stops",
@@ -520,6 +523,7 @@ async def transport_nearby_stops(params: SearchStopByCoordInput) -> NearbyStopsR
 # Tool 2: Departures / Arrivals
 # ---------------------------------------------------------------------------
 
+
 @mcp.tool(
     name="transport_departures",
     annotations={
@@ -592,6 +596,7 @@ async def transport_departures(params: DeparturesInput, ctx: Context) -> Departu
 # ---------------------------------------------------------------------------
 # Tool 3: Trip Planning
 # ---------------------------------------------------------------------------
+
 
 @mcp.tool(
     name="transport_trip_plan",
@@ -667,6 +672,7 @@ async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> TripPlanRe
 # Tool 5: Search datasets
 # ---------------------------------------------------------------------------
 
+
 @mcp.tool(
     name="transport_search_datasets",
     annotations={
@@ -700,7 +706,13 @@ async def transport_search_datasets(params: DatasetSearchInput) -> DatasetSearch
                 "title": pkg.get("title"),
                 "description": (pkg.get("notes", "") or "")[:300],
                 "organization": pkg.get("organization", {}).get("title", ""),
-                "formats": list({r.get("format", "").upper() for r in pkg.get("resources", []) if r.get("format")}),
+                "formats": list(
+                    {
+                        r.get("format", "").upper()
+                        for r in pkg.get("resources", [])
+                        if r.get("format")
+                    }
+                ),
                 "last_modified": pkg.get("metadata_modified", ""),
                 "url": f"https://data.opentransportdata.swiss/dataset/{pkg.get('name')}",
             }
@@ -721,6 +733,7 @@ async def transport_search_datasets(params: DatasetSearchInput) -> DatasetSearch
 # ---------------------------------------------------------------------------
 # Tool 6: Get dataset details
 # ---------------------------------------------------------------------------
+
 
 @mcp.tool(
     name="transport_get_dataset",
@@ -751,13 +764,15 @@ async def transport_get_dataset(params: DatasetDetailInput) -> DatasetDetailResu
 
         resources = []
         for r in pkg.get("resources", []):
-            resources.append({
-                "name": r.get("name") or r.get("description", ""),
-                "format": r.get("format", ""),
-                "url": r.get("url", ""),
-                "size": r.get("size"),
-                "last_modified": r.get("last_modified", ""),
-            })
+            resources.append(
+                {
+                    "name": r.get("name") or r.get("description", ""),
+                    "format": r.get("format", ""),
+                    "url": r.get("url", ""),
+                    "size": r.get("size"),
+                    "last_modified": r.get("last_modified", ""),
+                }
+            )
 
         return DatasetDetailResult(
             id=pkg.get("name"),
@@ -782,6 +797,7 @@ async def transport_get_dataset(params: DatasetDetailInput) -> DatasetDetailResu
 # ---------------------------------------------------------------------------
 # Tool 7: Störungsmeldungen (SIRI-SX)
 # ---------------------------------------------------------------------------
+
 
 @mcp.tool(
     annotations={
@@ -831,6 +847,7 @@ async def get_transport_disruptions(
 # ---------------------------------------------------------------------------
 # Tool 8: Belegungsprognose
 # ---------------------------------------------------------------------------
+
 
 @mcp.tool(
     annotations={
@@ -907,6 +924,7 @@ async def get_train_occupancy(
 # Tool 9: OJP Fare Preisauskunft
 # ---------------------------------------------------------------------------
 
+
 @mcp.tool(
     annotations={
         "title": "Ticket Price (OJP Fare)",
@@ -963,6 +981,7 @@ async def get_ticket_price(
 # ---------------------------------------------------------------------------
 # Tool 10: Zugformation
 # ---------------------------------------------------------------------------
+
 
 @mcp.tool(
     annotations={
@@ -1026,6 +1045,7 @@ async def get_train_composition(
 # Bonus-Tool: Systemstatus aller APIs
 # ===========================================================================
 
+
 @mcp.tool(
     annotations={
         "title": "API Status Check",
@@ -1080,9 +1100,7 @@ async def check_transport_api_status() -> str:
     lines.append(f"\n📊 {configured}/{len(ext_apis)} Erweiterungs-APIs konfiguriert.")
 
     if configured < len(ext_apis):
-        lines.append(
-            "\n💡 API-Keys erstellen: https://api-manager.opentransportdata.swiss/"
-        )
+        lines.append("\n💡 API-Keys erstellen: https://api-manager.opentransportdata.swiss/")
 
     # Formation Health Check (wenn konfiguriert)
     if os.environ.get("FORMATION_API_KEY"):
@@ -1100,16 +1118,21 @@ async def check_transport_api_status() -> str:
 # MCP Resources
 # ===========================================================================
 
+
 @mcp.resource("transport://datasets")
 async def list_datasets() -> str:
     """List all available transport datasets in the catalog."""
     try:
         result = await api_client.ckan_request("package_list")
-        return json.dumps({
-            "total": len(result) if isinstance(result, list) else 0,
-            "datasets": result,
-            "catalog_url": "https://data.opentransportdata.swiss/dataset/",
-        }, ensure_ascii=False, indent=2)
+        return json.dumps(
+            {
+                "total": len(result) if isinstance(result, list) else 0,
+                "datasets": result,
+                "catalog_url": "https://data.opentransportdata.swiss/dataset/",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
     except Exception as e:
         return api_client.handle_api_error(e)
 
@@ -1117,39 +1140,44 @@ async def list_datasets() -> str:
 @mcp.resource("transport://info")
 async def server_info() -> str:
     """Information about this MCP server and available APIs."""
-    return json.dumps({
-        "name": "Swiss Transport MCP Server",
-        "version": "0.2.0",
-        "description": "Complete Swiss public transport data from opentransportdata.swiss",
-        "apis": {
-            "OJP 2.0": "Journey planning, stop search, departures (XML/SOAP)",
-            "CKAN": "Dataset catalog with ~90 transport datasets (REST/JSON)",
-            "SIRI-SX": "Real-time disruption alerts (XML) – requires SIRI_SX_API_KEY",
-            "Occupancy": "Train occupancy forecasts (JSON) – requires OCCUPANCY_API_KEY",
-            "OJP Fare": "Ticket price information (XML/OJP) – requires OJP_FARE_API_KEY",
-            "Formation": "Train composition and wagon order (JSON) – requires FORMATION_API_KEY",
+    return json.dumps(
+        {
+            "name": "Swiss Transport MCP Server",
+            "version": "0.2.0",
+            "description": "Complete Swiss public transport data from opentransportdata.swiss",
+            "apis": {
+                "OJP 2.0": "Journey planning, stop search, departures (XML/SOAP)",
+                "CKAN": "Dataset catalog with ~90 transport datasets (REST/JSON)",
+                "SIRI-SX": "Real-time disruption alerts (XML) – requires SIRI_SX_API_KEY",
+                "Occupancy": "Train occupancy forecasts (JSON) – requires OCCUPANCY_API_KEY",
+                "OJP Fare": "Ticket price information (XML/OJP) – requires OJP_FARE_API_KEY",
+                "Formation": "Train composition and wagon order (JSON) – requires FORMATION_API_KEY",
+            },
+            "tools": [
+                "transport_search_stop – Find stops by name",
+                "transport_nearby_stops – Find stops by coordinates",
+                "transport_departures – Live departures at a stop",
+                "transport_trip_plan – Plan a journey A→B",
+                "transport_search_datasets – Search data catalog",
+                "transport_get_dataset – Get dataset details",
+                "get_transport_disruptions – Current disruptions (SIRI-SX)",
+                "get_train_occupancy – Occupancy forecast for trains",
+                "get_ticket_price – Ticket price information (OJP Fare)",
+                "get_train_composition – Train formation and wagon order",
+                "check_transport_api_status – Check API connection status",
+            ],
+            "api_key_info": "Get free keys at https://api-manager.opentransportdata.swiss/",
+            "data_source": "https://opentransportdata.swiss/",
         },
-        "tools": [
-            "transport_search_stop – Find stops by name",
-            "transport_nearby_stops – Find stops by coordinates",
-            "transport_departures – Live departures at a stop",
-            "transport_trip_plan – Plan a journey A→B",
-            "transport_search_datasets – Search data catalog",
-            "transport_get_dataset – Get dataset details",
-            "get_transport_disruptions – Current disruptions (SIRI-SX)",
-            "get_train_occupancy – Occupancy forecast for trains",
-            "get_ticket_price – Ticket price information (OJP Fare)",
-            "get_train_composition – Train formation and wagon order",
-            "check_transport_api_status – Check API connection status",
-        ],
-        "api_key_info": "Get free keys at https://api-manager.opentransportdata.swiss/",
-        "data_source": "https://opentransportdata.swiss/",
-    }, ensure_ascii=False, indent=2)
+        ensure_ascii=False,
+        indent=2,
+    )
 
 
 # ===========================================================================
 # MCP Prompts (ARCH-008: use all three primitives – tools, resources, prompts)
 # ===========================================================================
+
 
 @mcp.prompt(title="Plan a school / group trip")
 def plan_group_trip(
@@ -1363,9 +1391,7 @@ async def _serve_http(
     import uvicorn
 
     app = _build_http_app(transport, origins, host=host, stateless=stateless, port=port)
-    config = uvicorn.Config(
-        app, host=host, port=port, log_level=mcp.settings.log_level.lower()
-    )
+    config = uvicorn.Config(app, host=host, port=port, log_level=mcp.settings.log_level.lower())
     await uvicorn.Server(config).serve()
 
 
@@ -1391,9 +1417,7 @@ def main():
         origins = _resolve_cors_origins()
         stateless = False
         if transport == "sse":
-            logger.warning(
-                "MCP_TRANSPORT=sse is deprecated; use 'streamable-http' (or 'http')."
-            )
+            logger.warning("MCP_TRANSPORT=sse is deprecated; use 'streamable-http' (or 'http').")
             path = _SSE_PATH
         else:
             path = _STREAMABLE_HTTP_PATH
@@ -1409,8 +1433,7 @@ def main():
                     "Mcp-Session-Id edge routing required for horizontal scale-out."
                 )
         logger.info(
-            f"Starting {transport} server on http://{host}:{port}{path} "
-            f"(CORS origins: {origins})"
+            f"Starting {transport} server on http://{host}:{port}{path} (CORS origins: {origins})"
         )
         anyio.run(lambda: _serve_http(transport, host, port, origins, stateless))
     elif transport == "stdio":
