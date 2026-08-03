@@ -7,6 +7,56 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Retry-Politik gegenüber opentransportdata.swiss** (ARCH-014), in einem
+  gemeinsamen Kern (`retry.py`) für alle vier Aufrufstellen: `ojp_request`,
+  `ckan_request` sowie `TransportAPIClient.get` und `.post_xml`.
+
+  Bisher gab es keine — obwohl der Docstring von `TransportAPIClient`
+  «Fehlerbehandlung (Retries, Timeouts, HTTP-Fehler)» versprach. Ein einzelner
+  Netzwerkfehler, ein Timeout oder ein 503 beendete den Tool-Aufruf.
+
+  Wiederholt werden Netzwerkfehler, Timeouts, 5xx und 429 — vier Versuche. Ein
+  4xx ausser 429 scheitert weiterhin sofort; ebenso jeder `ValueError`. Das
+  betrifft namentlich den 403-Pfad von CKAN: Die Meldung nennt das fehlende
+  Abo im API-Manager und ist damit das, was den Fehler behebbar macht — sie
+  darf nicht hinter einem generischen Retry verschwinden.
+
+- **`Retry-After` wird gelesen und schlägt die eigene Backoff-Kurve**, in
+  beiden Formen nach RFC 9110 §10.2.3 (Sekundenzahl und HTTP-Datum). Ein
+  unbrauchbarer Header führt zurück auf die Kurve statt zum Absturz.
+
+- **Backoff ist gestreut (Jitter).** `2**attempt` ist deterministisch: Fällt
+  die Quelle aus, während mehrere Clients sie abfragen, laufen deren Retries im
+  Gleichtakt und die Last kommt als Welle zurück — genau wenn die Quelle sich
+  erholt. Exponentiell `[0.5x, 1.5x]`, auf einem `Retry-After` einseitig
+  `[1.0x, 1.25x]`. Deckel von 20 s je Einzelwartezeit, angewandt **nach** dem
+  Jittern — die andere Reihenfolge macht den Deckel zu gar keiner Schranke.
+
+- **Gesamtbudget über den ganzen Aufruf: 25 s, für OJP 45 s.** Die Abweichung
+  ist begründet und nicht versehentlich: `OJP_TIMEOUT = 45.0` steht seit je im
+  Repo, weil Trip-Berechnungen länger dauern. Ein 25-s-Budget hätte legitime
+  Verbindungsabfragen abgewürgt, die heute durchgehen — der Retry soll
+  Ausfälle überbrücken und nicht funktionierende Anfragen kürzen. Ein Test
+  hält beide Werte gegen `MCP_DEFAULT_TIMEOUT` fest.
+
+  Das Budget hängt an einer `asyncio.timeout`-Deadline, nicht am
+  httpx-Timeout: httpx begrenzt pro Operation, und sein Read-Timeout beginnt
+  mit jedem Chunk von vorn — eine langsam tröpfelnde Antwort würde das Budget
+  sonst überdauern, ohne dass ein einzelner Read abläuft.
+
+- **Der Rate-Limiter zählt jeden Versuch, nicht jeden Aufruf.** Ein Retry ist
+  eine weitere Abfrage bei der Quelle. Zählte nur der erste, meldete der
+  Limiter weniger Verbrauch, als er zugelassen hat — und ausgerechnet ein
+  Server, der wegen Überlast 503 sendet, bekäme ungezählte Wiederholungen.
+
+### Fixed
+
+- **Ein aufgebrauchtes Gesamtbudget wäre der Fehlerabbildung entkommen.** Es
+  wirft den builtin `TimeoutError`, `TransportAPIClient.get` fing aber nur
+  `httpx.TimeoutException` — der rohe Fehler wäre beim Tool angekommen. Die
+  Meldung nannte ausserdem ein festes «Timeout nach 30s» und benennt jetzt das
+  tatsächlich erschöpfte Budget.
+
 - **Inbound Host/Origin allow-list for the network transports
   (`MCP_ALLOWED_HOSTS`, SEC-005).** Comma-separated, compared verbatim so an
   entry carries its port (e.g. `fahrplan.example.ch:8080`). Anything else is

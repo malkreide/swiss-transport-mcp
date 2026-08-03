@@ -22,6 +22,7 @@ import httpx
 
 from . import __version__
 from .net_security import resolve_ssl_verify, validate_egress_url
+from .retry import OJP_BUDGET, TOTAL_BUDGET, call_with_retry
 from .tracing import span
 
 logger = logging.getLogger("swiss-transport-mcp")
@@ -253,10 +254,25 @@ class TransportAPIClient:
         }
 
         try:
-            config.rate_limit.record()
             with span("api.get", **{"api.name": api_name}):
-                response = await self._client.get(url, params=params, headers=headers)
-                response.raise_for_status()
+
+                async def _attempt(remaining: float) -> httpx.Response:
+                    resp = await self._client.get(
+                        url, params=params, headers=headers, timeout=remaining
+                    )
+                    resp.raise_for_status()
+                    return resp
+
+                # ``record`` pro Versuch statt einmal pro Aufruf: Ein Retry ist
+                # eine weitere Abfrage bei der Quelle. Zählte nur der erste,
+                # meldete der Limiter weniger Verbrauch, als er zugelassen hat —
+                # und ein Server, der wegen Überlast 503 sendet, bekäme
+                # ausgerechnet dann ungezählte Wiederholungen.
+                response = await call_with_retry(
+                    _attempt,
+                    label=f"api.{api_name}",
+                    before_attempt=config.rate_limit.record,
+                )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 raise RateLimitError(
@@ -280,8 +296,16 @@ class TransportAPIClient:
                 raise APIError(
                     f"API '{api_name}': HTTP {e.response.status_code} from upstream service."
                 ) from e
-        except httpx.TimeoutException:
-            raise APIError(f"API '{api_name}': Timeout nach 30s. Der Server antwortet nicht.")
+        # ``TimeoutError`` (builtin) kommt aus dem Gesamtbudget der
+        # Retry-Schleife, ``httpx.TimeoutException`` aus einer einzelnen
+        # Operation. Für den Aufrufer ist beides dasselbe: Es hat zu lange
+        # gedauert. Ohne den builtin-Fall entkäme ein aufgebrauchtes Budget der
+        # Fehlerabbildung ganz und käme roh beim Tool an.
+        except (httpx.TimeoutException, TimeoutError):
+            raise APIError(
+                f"API '{api_name}': Zeitbudget von {TOTAL_BUDGET:g}s erschöpft. "
+                f"Der Server antwortet nicht."
+            )
         except httpx.ConnectError:
             raise APIError(
                 f"API '{api_name}': Verbindung fehlgeschlagen. Prüfe deine Netzwerkverbindung."
@@ -338,11 +362,23 @@ class TransportAPIClient:
         }
 
         try:
-            config.rate_limit.record()
             url = validate_egress_url(config.base_url)
             with span("api.post_xml", **{"api.name": api_name}):
-                response = await self._client.post(url, content=xml_body, headers=headers)
-                response.raise_for_status()
+
+                async def _attempt(remaining: float) -> httpx.Response:
+                    resp = await self._client.post(
+                        url, content=xml_body, headers=headers, timeout=remaining
+                    )
+                    resp.raise_for_status()
+                    return resp
+
+                # OJP-Budget: Trip-Berechnungen dauern länger, siehe retry.py.
+                response = await call_with_retry(
+                    _attempt,
+                    budget=OJP_BUDGET,
+                    label=f"api.{api_name}",
+                    before_attempt=config.rate_limit.record,
+                )
         except httpx.HTTPStatusError as e:
             # OBS-002: log upstream body to stderr, don't surface it.
             logger.warning(
