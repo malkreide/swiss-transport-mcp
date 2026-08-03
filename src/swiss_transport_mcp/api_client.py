@@ -16,6 +16,7 @@ from typing import Any
 import httpx
 
 from .net_security import resolve_ssl_verify, validate_egress_url
+from .retry import OJP_BUDGET, call_with_retry
 from .tracing import span
 
 logger = logging.getLogger("swiss-transport-mcp")
@@ -126,11 +127,18 @@ async def ojp_request(xml_body: str, version: str = "v2") -> str:
 
     async with _http_client(OJP_TIMEOUT) as client:
         with span("ojp.request", **{"http.method": "POST", "ojp.version": version}):
-            response = await client.post(
-                url, content=xml_body, headers=headers, timeout=OJP_TIMEOUT
-            )
-            response.raise_for_status()
-            return response.text
+
+            async def _attempt(remaining: float) -> str:
+                response = await client.post(
+                    url,
+                    content=xml_body,
+                    headers=headers,
+                    timeout=min(OJP_TIMEOUT, remaining),
+                )
+                response.raise_for_status()
+                return response.text
+
+            return await call_with_retry(_attempt, budget=OJP_BUDGET, label="ojp")
 
 
 # ---------------------------------------------------------------------------
@@ -167,26 +175,37 @@ async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dic
 
     async with _http_client(DEFAULT_TIMEOUT) as client:
         with span("ckan.request", **{"http.method": "GET", "ckan.action": action}):
-            response = await client.get(
-                url, params=params or {}, headers=headers, timeout=DEFAULT_TIMEOUT
-            )
 
-            if response.status_code == 403:
-                raise ValueError(
-                    "CKAN API returned 403 Forbidden. The CKAN datasets API may "
-                    "require a separate subscription on api-manager.opentransportdata.swiss. "
-                    "Subscribe to the 'CKAN' API product in the API Manager portal."
+            async def _attempt(remaining: float) -> dict[str, Any]:
+                response = await client.get(
+                    url,
+                    params=params or {},
+                    headers=headers,
+                    timeout=min(DEFAULT_TIMEOUT, remaining),
                 )
 
-            response.raise_for_status()
-            data = response.json()
+                # Vor ``raise_for_status``, damit der Hinweis auf das fehlende
+                # Abo erhalten bleibt. Als ``ValueError`` ist es zugleich nicht
+                # wiederholbar — ein fehlendes Abo wird beim vierten Versuch
+                # nicht zum vorhandenen.
+                if response.status_code == 403:
+                    raise ValueError(
+                        "CKAN API returned 403 Forbidden. The CKAN datasets API may "
+                        "require a separate subscription on api-manager.opentransportdata.swiss. "
+                        "Subscribe to the 'CKAN' API product in the API Manager portal."
+                    )
 
-            if not data.get("success"):
-                error = data.get("error", {})
-                msg = error.get("message", str(error))
-                raise ValueError(f"CKAN API error: {msg}")
+                response.raise_for_status()
+                data = response.json()
 
-            return data.get("result", {})
+                if not data.get("success"):
+                    error = data.get("error", {})
+                    msg = error.get("message", str(error))
+                    raise ValueError(f"CKAN API error: {msg}")
+
+                return data.get("result", {})
+
+            return await call_with_retry(_attempt, label="ckan")
 
 
 # ---------------------------------------------------------------------------
