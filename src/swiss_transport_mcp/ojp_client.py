@@ -142,6 +142,20 @@ def build_trip_request(
     )
 
 
+def is_stop_ref(ref: str) -> bool:
+    """True when ``ref`` is a stop id this client can reference, not a name.
+
+    One predicate for both sides on purpose. The server decides with it whether
+    to resolve a name, and ``_build_place_ref`` decides with it which element to
+    emit; two copies of the rule would drift, and the drift would show up as a
+    lookup for a place named "8503000:0:31".
+    """
+    if ref.isdigit():
+        return True
+    parts = ref.split(":")
+    return len(parts) > 1 and all(p.isdigit() for p in parts if p)
+
+
 def _build_place_ref(ref: str) -> str:
     """Build the reference element that goes inside a ``PlaceRef``.
 
@@ -156,9 +170,23 @@ def _build_place_ref(ref: str) -> str:
     The request still went out and the tool still answered -- with "no trips
     found". A failure that looks like an answer. Refusing is louder and
     cheaper; the caller resolves the name to a stop id first.
+
+    **Two kinds of id, two elements.** ``transport_search_stop`` hands back
+    whatever the source called the place, and that is a ``StopPlaceRef``
+    (``8503000``, a station) *or* a ``siri:StopPointRef``
+    (``8503000:0:31``, a single quay). Accepting only the first would make the
+    search tool recommend ids the other tools reject -- the same "looks like an
+    answer" shape, one step further along.
+
+    The kind is read off the shape because it has to be: a stop id crosses the
+    tool boundary as a bare string, so by the time it comes back there is no
+    element left to remember. The colon form is the DIDOK quay notation the
+    source itself emits.
     """
     if ref.isdigit():
         return f"<StopPlaceRef>{ref}</StopPlaceRef>"
+    if is_stop_ref(ref):
+        return f"<siri:StopPointRef>{ref}</siri:StopPointRef>"
     raise ValueError(
         f"{ref!r} is not a stop id. OJP 2.0 has no name-only place reference; "
         "resolve the name with transport_search_stop and pass the stop_id."

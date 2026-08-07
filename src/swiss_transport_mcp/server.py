@@ -548,8 +548,13 @@ async def _resolve_place(ref: str) -> tuple[str, str]:
     one location lookup, and take the best match. When nothing matches, say so
     with the name in it -- an empty trip list reads as "there is no connection"
     rather than "I could not find that place".
+
+    What counts as an id is `ojp_client.is_stop_ref`, not a local rule: station
+    ids (``8503000``) and quay ids (``8503000:0:31``) both come back from
+    `transport_search_stop`, and a second copy of the test here would drift into
+    looking up a place named "8503000:0:31".
     """
-    if ref.isdigit():
+    if ojp_client.is_stop_ref(ref):
         return ref, ref
 
     xml_response = await api_client.ojp_request(ojp_client.build_location_request(ref, limit=1))

@@ -53,6 +53,21 @@ async def test_a_stop_id_costs_no_lookup(monkeypatch):
 
 
 @respx.mock
+async def test_a_quay_id_costs_no_lookup_either(monkeypatch):
+    """Eine Haltekanten-Kennung ist auch eine Kennung.
+
+    `8503000:0:31` ist kein Name. Wer sie als Namen behandelt, sucht nach einem
+    Ort, der so heisst, findet keinen und meldet «No stop found» fuer eine
+    Kennung, die die Suche selbst gerade ausgegeben hat.
+    """
+    monkeypatch.setenv("TRANSPORT_API_KEY", "k")
+    route = respx.post(OJP_V2_URL).mock(return_value=httpx.Response(200, text=EMPTY))
+
+    assert await server._resolve_place("8503000:0:31") == ("8503000:0:31", "8503000:0:31")
+    assert not route.called, "Haltekanten-Kennung als Name nachgeschlagen"
+
+
+@respx.mock
 async def test_a_name_becomes_the_id_of_its_best_match(monkeypatch):
     monkeypatch.setenv("TRANSPORT_API_KEY", "k")
     respx.post(OJP_V2_URL).mock(

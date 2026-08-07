@@ -26,16 +26,16 @@ import re
 import xml.etree.ElementTree as ET
 
 import pytest
-
-from swiss_transport_mcp import ojp_client
-from swiss_transport_mcp.ojp_client import OJP, SIRI, _build_place_ref
-from tests.fixture_data import (
+from fixture_data import (
     allowed_children,
     choice_refs,
     ojp_elements,
     required_children,
     upstream_auth_probe,
 )
+
+from swiss_transport_mcp import ojp_client
+from swiss_transport_mcp.ojp_client import OJP, SIRI, _build_place_ref
 
 TEMPLATES = sorted((ojp_client.TEMPLATE_DIR).glob("*.xml"))
 
@@ -164,6 +164,26 @@ def test_place_ref_builder_emits_an_allowed_reference():
     assert tag in allowed, (
         f"_build_place_ref baut <{tag}>, erlaubt sind in PlaceRefGroup: {sorted(allowed)}"
     )
+
+
+def test_a_quay_id_is_referenced_as_a_quay():
+    """Was der Standort-Parser als Kennung ausgibt, muss referenzierbar sein.
+
+    Der Parser liest seit dieser Aenderung auch `siri:StopPointRef` — eine
+    Haltekante wie `8503000:0:31`. Koennte `_build_place_ref` daraus nichts
+    bauen, empfaehle `transport_search_stop` Kennungen, die `transport_departures`
+    und `transport_trip_plan` ablehnen: derselbe Ausfall, der wie eine Antwort
+    aussieht, einen Schritt weiter.
+
+    `PlaceRefGroup` fuehrt `siri:StopPointRef` als Alternative — geprueft wird
+    gegen den aufgezeichneten Vertrag, nicht gegen diese Behauptung.
+    """
+    assert "siri:StopPointRef" in choice_refs("PlaceRefGroup")
+    assert ojp_client.is_stop_ref("8503000:0:31")
+    built = _build_place_ref("8503000:0:31")
+    assert built.startswith("<siri:StopPointRef>")
+    # Die Vorlagen deklarieren den siri-Namensraum, sonst waere der Rumpf kaputt.
+    assert 'xmlns:siri="' in ojp_client.build_stop_event_request("8503000:0:31")
 
 
 def test_place_ref_builder_refuses_a_name_it_cannot_reference():
