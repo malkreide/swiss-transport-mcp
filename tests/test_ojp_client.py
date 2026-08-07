@@ -4,6 +4,8 @@ Pure/offline: no network, no API key. Every check is a real `assert` so a
 regression makes pytest fail (not a swallowed print like the old suite).
 """
 
+import pytest
+
 from swiss_transport_mcp import ojp_client
 from swiss_transport_mcp.ojp_client import (
     OJP,
@@ -46,11 +48,13 @@ def test_build_place_ref_numeric_id_uses_stopplaceref():
     assert ref == "<StopPlaceRef>8503000</StopPlaceRef>"
 
 
-def test_build_place_ref_name_uses_locationname_and_escapes():
-    ref = _build_place_ref("Zürich HB & Co <x>")
-    assert ref.startswith("<LocationName><Text>")
-    assert "&amp;" in ref
-    assert "<x>" not in ref
+def test_build_place_ref_refuses_a_name():
+    # OJP 2.0 has no name-only place reference; `PlaceRefGroup` wants one of six
+    # real reference elements. This used to build `<LocationName>` -- the OJP 1.0
+    # spelling -- and the resulting request quietly matched nothing. Held
+    # against the recorded schema in test_ojp_contract.py.
+    with pytest.raises(ValueError):
+        _build_place_ref("Zürich HB & Co <x>")
 
 
 def test_parse_duration_formats():
@@ -99,15 +103,27 @@ def test_build_location_coord_request_inserts_coords():
 
 
 # ---------------------------------------------------------------------------
-# Response parser (with a hand-built minimal OJP fixture)
+# Response parser
 # ---------------------------------------------------------------------------
+#
+# Diese Antwort ist **ausgedacht**, nicht aufgezeichnet: Die OJP-Schnittstelle
+# verlangt einen Bearer-Token, den CI nicht hat — gemessen in
+# `fixtures/upstream_auth_probe.json`, begruendet in `fixtures/PROVENANCE.md`.
+# Sie kann dem Parser deshalb nicht widersprechen; sie zeigt nur, dass er tut,
+# was ihr Autor erwartet hat.
+#
+# Was widersprechen kann, ist der aufgezeichnete OJP-2.0-Vertrag: siehe
+# `test_ojp_contract.py`. Die Form unten folgt ihm bewusst — Pflichtfelder
+# `Name` und `Complete` sind da, `siri:ServiceDelivery` steht im
+# SIRI-Namensraum, und die Wurzel traegt `version="2.0"`. Die alte Fassung
+# hatte nichts davon.
 
 
 def _location_fixture() -> str:
     return f"""<?xml version="1.0" encoding="UTF-8"?>
-<OJP xmlns="{OJP}" xmlns:siri="{SIRI}">
+<OJP xmlns="{OJP}" xmlns:siri="{SIRI}" version="2.0">
   <OJPResponse>
-    <ServiceDelivery>
+    <siri:ServiceDelivery>
       <OJPLocationInformationDelivery>
         <PlaceResult>
           <Place>
@@ -115,6 +131,7 @@ def _location_fixture() -> str:
               <StopPlaceRef>8503000</StopPlaceRef>
               <StopPlaceName><Text>Zürich HB</Text></StopPlaceName>
             </StopPlace>
+            <Name><Text>Zürich HB</Text></Name>
             <GeoPosition>
               <siri:Longitude>8.5417</siri:Longitude>
               <siri:Latitude>47.3769</siri:Latitude>
@@ -122,10 +139,11 @@ def _location_fixture() -> str:
             <Mode><PtMode>rail</PtMode></Mode>
             <Mode><PtMode>bus</PtMode></Mode>
           </Place>
+          <Complete>true</Complete>
           <Probability>0.95</Probability>
         </PlaceResult>
       </OJPLocationInformationDelivery>
-    </ServiceDelivery>
+    </siri:ServiceDelivery>
   </OJPResponse>
 </OJP>"""
 

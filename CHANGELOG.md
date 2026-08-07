@@ -39,6 +39,75 @@ All notable changes to this project are documented here.
   am 2026-08-07: Acht Server im Portfolio sprechen mit CKAN, alle acht prüfen
   das `success`-Envelope, sieben defaulteten `result` danach.
 
+### Behoben — jede OJP-Anfrage dieses Servers war ungueltig
+
+Aufgezeichnet wurde am 7.8.2026 der OJP-2.0-Vertrag: das oeffentliche XML-Schema
+der CEN-Norm CEN/TS 17118, fester Tag `v2.0`. Fuenf Befunde, alle am
+ausgelieferten Code, alle derselben Herkunft — der Server sprach an mehreren
+Stellen OJP **1.0**, wo er 2.0 zu sprechen glaubt:
+
+1. **`<n>` statt `<Name>`.** `trip_request.xml` und `stop_event_request.xml`
+   trugen in jedem `PlaceRef` ein Element `<n>`, das es in OJP 2.0 nicht gibt —
+   und liessen damit `Name` weg, das `PlaceRefGroup` als **Pflicht** fuehrt.
+   Betroffen war jede Reise- und jede Abfahrtsanfrage, auch die dokumentierte
+   «beste» Variante mit numerischer Haltestellen-Kennung.
+2. **`<LocationName>` fuer Ortsnamen.** `_build_place_ref` baute fuer alles
+   Nicht-Numerische die OJP-1.0-Schreibweise. In OJP 2.0 gibt es innerhalb eines
+   `PlaceRef` ueberhaupt keine Form «finde den Ort, der so heisst». Die Anfrage
+   ging trotzdem raus, und `transport_trip_plan` meldete «No trips found from
+   'Zürich HB' to 'Bern'» — obwohl die Doku des Werkzeugs Ortsnamen ausdruecklich
+   zusichert. Ein Ausfall, der wie eine Antwort aussieht.
+3. **`<IncludeRealtimeData>` gibt es nicht.** Beide Anfragen forderten
+   Echtzeitdaten mit einem Element, das das Schema nicht kennt; es heisst
+   `UseRealtimeData` und ist eine Aufzaehlung (`full`/`explanatory`/`none`),
+   kein Boolescher Wert. Die Reihenfolge der uebrigen Parameter stimmte
+   ebenfalls nicht — `xs:sequence` ist geordnet.
+4. **Nur `StopPlaceName` gelesen.** `PlaceStructure` fuehrt fuer *jede* der fuenf
+   Ortsarten ein Pflichtfeld `Name`; nur `StopPlace` hat zusaetzlich einen
+   eigenen `StopPlaceName`. Der Parser las allein den und verwarf danach jeden
+   Treffer ohne Namen — Haltekanten, Adressen, Ortschaften und POIs fielen
+   stillschweigend heraus, und deren Kennung (`siri:StopPointRef`) wurde gar
+   nicht erst gesucht.
+5. **Fusswege ohne Namen.** `LegStart`/`LegEnd` sind `PlaceRef`s und tragen ihren
+   Namen unter `Name`. Der Parser suchte `StopPointName` und `LocationName` —
+   das eine steht dort nie, das andere gibt es nicht. Fusswege kamen deshalb
+   immer ohne Start- und Zielnamen zurueck.
+
+Behoben. Ortsnamen loest der Server jetzt mit einer Standortabfrage in eine
+Kennung auf, statt sie als Text zu senden; ein Name ohne Treffer meldet «No stop
+found for …» und nicht mehr «no trips found». «Diesen Ort finde ich nicht» und
+«es gibt keine Verbindung» sind verschiedene Aussagen.
+
+**Was diese Befunde nicht sind:** ein Test gegen die laufende Schnittstelle. Sie
+stehen gegen die Norm, nicht gegen die Implementierung von
+opentransportdata.swiss — wie tolerant die ist, laesst sich ohne Token nicht
+messen. Ungueltig ist trotzdem ungueltig.
+
+### Hinzugefuegt — aufgezeichnete Herkunft fuer das, was sich aufzeichnen laesst
+
+Alle vier Quellen verlangen einen Bearer-Token; ohne ihn antworten sie mit 401
+bzw. 403 — gemessen, nicht behauptet, und in
+`tests/fixtures/upstream_auth_probe.json` festgehalten. Echte Antwort-Fixtures
+sind hier also nicht ehrlich moeglich, und `PROVENANCE.md` sagt das
+ausdruecklich, statt den handgeschriebenen Payloads ein Datum anzuschreiben, das
+nicht stimmt.
+
+Aufzeichenbar ist der Vertrag. `scripts/record_fixtures.py` liest das
+OJP-2.0-Schema am festen Tag `v2.0` und schreibt einen **abgeleiteten Index**
+(`tests/fixtures/ojp_2_0_contract.json`: 508 Elementnamen, 16 Strukturen, 25
+Gruppen, 3 Aufzaehlungen) samt Quell-URL und SHA-256 jeder gelesenen Datei.
+`--check` rechnet die Ableitung gegen die Quelle nach.
+
+Das Schema selbst liegt **nicht** im Repo: Das Quell-Repository fuehrt keine
+Lizenzdatei, und die zugrunde liegende Norm ist kostenpflichtig. Gruppenverweise
+bleiben im Index unaufgeloest — wer sie beim Aufzeichnen aufloest, schreibt seine
+eigene Lesart hinein und kann sie danach nicht mehr widerlegen.
+
+`tests/test_ojp_contract.py` und `tests/test_place_resolution.py` halten
+Anfragen, Parser und Aufloesung dagegen. Alle neuen Zusicherungen sind
+gegengeprueft: mit zurueckgedrehtem Produktivcode fallen sie, und zwar mit dem
+Befund im Text.
+
 ### Hinzugefuegt — die Live-Suite laeuft geplant, statt nur markiert zu sein
 
 `ci.yml` faehrt `pytest tests/ -m "not live"`. Das ist richtig — ein fremder 503

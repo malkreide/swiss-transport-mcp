@@ -304,6 +304,31 @@ PYTHONPATH=src pytest tests/ -m "not live"
 TRANSPORT_API_KEY=xxx pytest tests/ -m "live"
 ```
 
+### Woher die Testdaten stammen
+
+Alle vier Quellen dieses Servers verlangen einen Bearer-Token aus dem
+API-Manager von opentransportdata.swiss; CI kann deshalb keine echte Antwort
+aufzeichnen — gemessen und festgehalten in
+`tests/fixtures/upstream_auth_probe.json`. Die XML-Payloads in den Testmodulen
+sind damit **handgeschrieben, nicht aufgezeichnet**, und können dem
+Produktivcode nicht widersprechen: Beide stammen aus derselben Lektüre der
+Doku, und wo beide irren, irren beide gleich.
+
+Aufzeichnen lässt sich der Vertrag. OJP 2.0 ist eine CEN-Norm (CEN/TS 17118)
+mit öffentlichem XML-Schema, und `tests/fixtures/ojp_2_0_contract.json` ist ein
+daraus abgeleiteter, datierter Index — Elementnamen, die Strukturen, auf die
+dieser Server baut, die Aufzählungen, aus denen er Werte sendet, dazu der
+SHA-256 jeder gelesenen Schema-Datei. `tests/test_ojp_contract.py` hält die
+Anfragen und Parser dagegen. Das Schema selbst liegt bewusst **nicht** im Repo:
+Das Quell-Repository führt keine Lizenzdatei.
+
+```bash
+python scripts/record_fixtures.py          # neu aufzeichnen
+python scripts/record_fixtures.py --check  # gegen den festen Tag nachrechnen
+```
+
+Quelle, Datum, Auswahlregel und Hashes: [`tests/fixtures/PROVENANCE.md`](tests/fixtures/PROVENANCE.md).
+
 ---
 
 ## Changelog

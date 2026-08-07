@@ -1,0 +1,2034 @@
+{
+  "schema": "OJP 2.0 (CEN/TS 17118)",
+  "source_repo": "https://github.com/VDVde/OJP",
+  "source_ref": "v2.0",
+  "recorded_at": "2026-08-07",
+  "files": [
+    {
+      "name": "OJP.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP.xsd",
+      "bytes": 2201,
+      "sha256": "a78e43c7304a4c7c73929659dd3a8edc6b2ab917571165669eb490163409df82"
+    },
+    {
+      "name": "OJP_All.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_All.xsd",
+      "bytes": 1247,
+      "sha256": "9ddfb7a87fef274bb20a92fad44e432a424768d87714c8998064523916a28621"
+    },
+    {
+      "name": "OJP_Availability.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Availability.xsd",
+      "bytes": 19997,
+      "sha256": "e0bdd02a9a1443682ca40abaeac3830e6c47a546f18f170b4f19d9c6dbcbd97f"
+    },
+    {
+      "name": "OJP_Common.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Common.xsd",
+      "bytes": 22299,
+      "sha256": "9c29e47f99ff64dce309265b98ebb63059811ac6e0426752edcbd8f39704ac93"
+    },
+    {
+      "name": "OJP_FacilitySupport.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_FacilitySupport.xsd",
+      "bytes": 1057,
+      "sha256": "f85c4edaa20f6ba4335174fe1a0387cca40031ada93894a9f060c4e513d9df00"
+    },
+    {
+      "name": "OJP_Fare.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Fare.xsd",
+      "bytes": 14789,
+      "sha256": "fb37854085c93665627b8f3d3aafdfa85267ad4c2ad6b445fc6e687be3d9e2d0"
+    },
+    {
+      "name": "OJP_FareSupport.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_FareSupport.xsd",
+      "bytes": 39580,
+      "sha256": "d44911f3783f1341dda9c469b9dfed93b4a6bae272812168f01b5fa2fe25a55d"
+    },
+    {
+      "name": "OJP_JourneySupport.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_JourneySupport.xsd",
+      "bytes": 45476,
+      "sha256": "04693353f6d99033d122e446fd6079ae62bb58134c65f6e09a696169e4e329cc"
+    },
+    {
+      "name": "OJP_Lines.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Lines.xsd",
+      "bytes": 4331,
+      "sha256": "b69e3c5321f404df686c118caf40f5491d07747d2007ea66339f4f1445e82079"
+    },
+    {
+      "name": "OJP_Locations.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Locations.xsd",
+      "bytes": 23627,
+      "sha256": "5cae3f08db6f0500144644a542dcfca094154f4bfe5a43ed45a0891f7136fd90"
+    },
+    {
+      "name": "OJP_ModesSupport.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_ModesSupport.xsd",
+      "bytes": 26596,
+      "sha256": "55cf74b4b031e97f3f000f15be2510bc3eb95e3e60c32264dc37f75623450238"
+    },
+    {
+      "name": "OJP_PlaceSupport.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_PlaceSupport.xsd",
+      "bytes": 30494,
+      "sha256": "1dd949db06fd4dc0f21f6978f94ad5ee55421025b0f0ce6840e94ff5ae0f9fa2"
+    },
+    {
+      "name": "OJP_Requests.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Requests.xsd",
+      "bytes": 28268,
+      "sha256": "b599d54aed00bbd5dce124bba93c093b6708255d5b03ba6df61f9cfc4c2b582b"
+    },
+    {
+      "name": "OJP_RequestSupport.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_RequestSupport.xsd",
+      "bytes": 9237,
+      "sha256": "92f266378dd065ed202abbc19786feb698d2a1de82e2fec62fc680d99b3eff9d"
+    },
+    {
+      "name": "OJP_SituationSupport.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_SituationSupport.xsd",
+      "bytes": 2333,
+      "sha256": "284dbef3cd1f5e3af0840824378fdd082a3431c2cb12422819df7249d702c089"
+    },
+    {
+      "name": "OJP_Status.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Status.xsd",
+      "bytes": 3409,
+      "sha256": "b7fa91756871b08f4c5c97da4605a88aa96d0f064ea32b66e72837d78357ff78"
+    },
+    {
+      "name": "OJP_StopEvents.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_StopEvents.xsd",
+      "bytes": 16371,
+      "sha256": "84715591c9181c0a9ebe1d19579c70c34ab7007e61ee71a96af0f7b9e1d5b644"
+    },
+    {
+      "name": "OJP_TripInfo.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_TripInfo.xsd",
+      "bytes": 10404,
+      "sha256": "59a1c982f372c259bdcb1e9107403d7a30aed12d6661c3a53b40d972246c5a7d"
+    },
+    {
+      "name": "OJP_Trips.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Trips.xsd",
+      "bytes": 94067,
+      "sha256": "e41c2713c8c0fd7fc2ea546b2cfa3a341b7f43e7de950c531e55fa9dd2aae934"
+    },
+    {
+      "name": "OJP_Utility.xsd",
+      "url": "https://raw.githubusercontent.com/VDVde/OJP/v2.0/OJP/OJP_Utility.xsd",
+      "bytes": 4534,
+      "sha256": "86ba2ffa5a5138e6191b33e97194c184e3a0c75d37a7b1d826d8d4132fd96656"
+    }
+  ],
+  "element_names": [
+    "AbsoluteBearing",
+    "AccessFeatureStatus",
+    "AccessFeatureStatusText",
+    "AccessFeatureType",
+    "AccessMode",
+    "AccessModeList",
+    "AccessibilityFeature",
+    "AdditionalTime",
+    "AdditionalTransferTime",
+    "AdditionalWaitingTime",
+    "Address",
+    "AddressRef",
+    "AdjacentSystem",
+    "Age",
+    "AlightingAssistance",
+    "AllowedSystem",
+    "AllowedSystemId",
+    "AlternativeModeOfOperation",
+    "AlternativeService",
+    "Area",
+    "AreaGeometry",
+    "Attribute",
+    "AvailabilityProblemType",
+    "AvailabilityResponseContext",
+    "AvailabilityResult",
+    "Bearing",
+    "BikeTransport",
+    "BoardingAssistance",
+    "BookWhen",
+    "BookableServiceItem",
+    "BookableTicket",
+    "BookingAccess",
+    "BookingArrangement",
+    "BookingArrangements",
+    "BookingContact",
+    "BookingId",
+    "BookingMethod",
+    "BookingMethods",
+    "BookingNote",
+    "BookingNotes",
+    "BookingProcess",
+    "BookingUrl",
+    "BorderPoint",
+    "BufferTime",
+    "BuyWhen",
+    "CalcTime",
+    "CallAtStop",
+    "CallPlace",
+    "Cancelled",
+    "Category",
+    "Center",
+    "CertificateId",
+    "ChangeLegRef",
+    "ChangeParams",
+    "Changed",
+    "Circle",
+    "Code",
+    "Complete",
+    "ConfidenceLevel",
+    "ConsiderElevationData",
+    "ContactPerson",
+    "ContinueAt",
+    "ContinuousLeg",
+    "ConventionalModeOfOperation",
+    "Count",
+    "CountryName",
+    "Covered",
+    "CrossRoad",
+    "Currency",
+    "CurrentPosition",
+    "CyclingProfile",
+    "DataFrameRef",
+    "Date",
+    "Delayed",
+    "DepArrTime",
+    "Description",
+    "Destination",
+    "DestinationStopPointRef",
+    "DestinationSystem",
+    "DestinationText",
+    "DestinationWaitTime",
+    "Details",
+    "Deviation",
+    "DirectionHint",
+    "DirectionRef",
+    "DisplayPriority",
+    "Distance",
+    "DistributorInterchangeId",
+    "Duration",
+    "DwellTime",
+    "EarliestDepartureTime",
+    "Email",
+    "Embeddable",
+    "EmissionCO2",
+    "EndTime",
+    "EntitlementProduct",
+    "EntitlementProductName",
+    "EntitlementProductRef",
+    "EntitlementProducts",
+    "ErrorCondition",
+    "ErrorType",
+    "EstimatedQuay",
+    "EstimatedTime",
+    "EstimatedTimeHigh",
+    "EstimatedTimeLow",
+    "ExchangePointsProblemType",
+    "ExchangePointsResponseContext",
+    "ExchangePointsResult",
+    "Exclude",
+    "ExtendToFrontOrBack",
+    "Extension",
+    "ExtraInterchange",
+    "Facility",
+    "FareAuthorityFilter",
+    "FareAuthorityRef",
+    "FareAuthorityText",
+    "FareClass",
+    "FareEstimated",
+    "FareParam",
+    "FareProblemType",
+    "FareProduct",
+    "FareProductId",
+    "FareProductName",
+    "FareProductRef",
+    "FareQuota",
+    "FareResponseContext",
+    "FareResult",
+    "Fax",
+    "Feasibility",
+    "FeederInterchangeId",
+    "Follow",
+    "FollowDirectionName",
+    "FollowExit",
+    "FollowRoadName",
+    "FollowSignName",
+    "ForeignObjectRefs",
+    "From",
+    "FromLegIdRef",
+    "FromStopSeqNumber",
+    "FromStopSequenceNumber",
+    "FromTripIdRef",
+    "FurtherDetails",
+    "GeoPosition",
+    "GeoRestriction",
+    "GroupBooking",
+    "GuidanceAdvice",
+    "HearingImpaired",
+    "HeavyLuggage",
+    "HikingProfile",
+    "HouseNumber",
+    "Id",
+    "ImmediateTripStart",
+    "Importance",
+    "IncludeAccessFeatures",
+    "IncludeAccessFeaturesStatus",
+    "IncludeAccessibilityDetails",
+    "IncludeAllRestrictedLines",
+    "IncludeAlternativeOptions",
+    "IncludeCalls",
+    "IncludeFare",
+    "IncludeFormation",
+    "IncludeIntermediateStops",
+    "IncludeLegProjection",
+    "IncludeOnwardCalls",
+    "IncludeOperatingDays",
+    "IncludeOperators",
+    "IncludePlacesContext",
+    "IncludePosition",
+    "IncludePreviousCalls",
+    "IncludePtModes",
+    "IncludeService",
+    "IncludeSituationsContext",
+    "IncludeStopHierarchy",
+    "IncludeTrackProjection",
+    "IncludeTrackSections",
+    "IncludeTurnDescription",
+    "IndividualTransportOption",
+    "Infeasible",
+    "InfoUrl",
+    "InitialInput",
+    "InterchangeCancellation",
+    "InterchangeRef",
+    "IsAlternativeOption",
+    "ItModeAndModeOfOperation",
+    "ItModeToCover",
+    "JourneyRef",
+    "JourneyRelations",
+    "JourneyTrack",
+    "Key",
+    "KilogramPerPersonKm",
+    "Label",
+    "Language",
+    "LastTimetableUpdate",
+    "LatestArrivalTime",
+    "LatestBookingTime",
+    "Leg",
+    "LegAlight",
+    "LegAttribute",
+    "LegBoard",
+    "LegDescription",
+    "LegEnd",
+    "LegIntermediate",
+    "LegStart",
+    "LegTrack",
+    "Length",
+    "LevelEntrance",
+    "LevelEntranceOrBoardingAid",
+    "LevelName",
+    "LevelPublicCode",
+    "Lighting",
+    "Line",
+    "LineDirectionFilter",
+    "LineFilter",
+    "LineInformationProblemType",
+    "LineRef",
+    "LineResult",
+    "LinkProjection",
+    "Location",
+    "LocationInformationResponseContext",
+    "LocationProblemType",
+    "LogData",
+    "LowerRight",
+    "Mandatory",
+    "MaxBookableCapacity",
+    "MaxDistance",
+    "MaxDuration",
+    "MaximumBookingPeriod",
+    "MeetsViaRequest",
+    "MimeType",
+    "MinDistance",
+    "MinDuration",
+    "MinimalProbability",
+    "MinimumBookingPeriod",
+    "MobilityUser",
+    "Mode",
+    "ModeAndModeOfOperationFilter",
+    "ModeFilter",
+    "Modes",
+    "MotorisedMainTravelMode",
+    "MultiPointTripResponseContext",
+    "MultiPointTripResult",
+    "MultiPointType",
+    "MultiTripFareRequest",
+    "MultiTripFareResult",
+    "Name",
+    "NameSuffix",
+    "NetPrice",
+    "NoAlightingAtStop",
+    "NoBoardingAtStop",
+    "NoChangeAt",
+    "NoElevator",
+    "NoEscalator",
+    "NoRamp",
+    "NoSight",
+    "NoSingleStep",
+    "NoStairs",
+    "NoTravelator",
+    "NotServicedStop",
+    "NotVia",
+    "NumberOfResults",
+    "NumberOfResultsAfter",
+    "NumberOfResultsBefore",
+    "OJP",
+    "OJPAvailabilityDelivery",
+    "OJPAvailabilityRequest",
+    "OJPError",
+    "OJPExchangePointsDelivery",
+    "OJPExchangePointsRequest",
+    "OJPFareDelivery",
+    "OJPFareRequest",
+    "OJPGenericProblemType",
+    "OJPLineInformationDelivery",
+    "OJPLineInformationRequest",
+    "OJPLocationInformationDelivery",
+    "OJPLocationInformationRequest",
+    "OJPMultiPointTripDelivery",
+    "OJPMultiPointTripRequest",
+    "OJPRequest",
+    "OJPResponse",
+    "OJPStatusDelivery",
+    "OJPStatusRequest",
+    "OJPStatusResponse",
+    "OJPStopEventDelivery",
+    "OJPStopEventRequest",
+    "OJPTripChangeDelivery",
+    "OJPTripChangeRequest",
+    "OJPTripDelivery",
+    "OJPTripInfoDelivery",
+    "OJPTripInfoRequest",
+    "OJPTripRefineDelivery",
+    "OJPTripRefineRequest",
+    "OJPTripRequest",
+    "Occupancy",
+    "OnwardCall",
+    "OperatingDayRef",
+    "OperatingDays",
+    "OperatingDaysDescription",
+    "Operator",
+    "OperatorFilter",
+    "OperatorRef",
+    "OperatorRefs",
+    "Operators",
+    "OptimisationMethod",
+    "Order",
+    "Origin",
+    "OriginStopPointRef",
+    "OriginText",
+    "OriginWaitTime",
+    "OsmTag",
+    "OwnerRef",
+    "POIAdditionalInformation",
+    "PTLegs",
+    "ParallelService",
+    "Params",
+    "ParentRef",
+    "ParticipantRef",
+    "PassedZones",
+    "PassengerCategory",
+    "PathGuidance",
+    "PathGuidanceSection",
+    "PathLink",
+    "Pattern",
+    "PersonalMode",
+    "PersonalModeOfOperation",
+    "Phone",
+    "PickUpLocation",
+    "Place",
+    "PlaceFareRequest",
+    "PlaceFareResult",
+    "PlaceRef",
+    "PlaceResult",
+    "Places",
+    "PlannedQuay",
+    "PointOfInterest",
+    "PointOfInterestCategory",
+    "PointOfInterestClassification",
+    "PointOfInterestFilter",
+    "PointOfInterestRef",
+    "Points",
+    "PolylinePoint",
+    "Position",
+    "PostCode",
+    "Pram",
+    "PreviousCall",
+    "Price",
+    "Priority",
+    "PrivateCode",
+    "Probability",
+    "ProductCategory",
+    "ProductCategoryRef",
+    "Progress",
+    "ProgressBetweenStops",
+    "ProtoProduct",
+    "PtMode",
+    "PtSituation",
+    "PublicCode",
+    "PublicTransport",
+    "PublishedServiceName",
+    "PurchaseMoment",
+    "Radius",
+    "ReadingImpaired",
+    "RecordedAtTime",
+    "Rectangle",
+    "ReferredSystem",
+    "RefineLegRef",
+    "RefineParams",
+    "RequestStop",
+    "RequiredCard",
+    "ReservationNeeded",
+    "Restricted",
+    "RestrictionNote",
+    "Restrictions",
+    "RoadName",
+    "RoadSituation",
+    "RouteDescription",
+    "RouteDescriptionText",
+    "RouteGeometry",
+    "SaleUrl",
+    "SalesPackageElementRef",
+    "ServerBuildVersion",
+    "Service",
+    "ServiceArrival",
+    "ServiceDeparture",
+    "ServiceReady",
+    "ServiceStarted",
+    "SetDownLocation",
+    "ShortName",
+    "Signature",
+    "SituationFullRef",
+    "SituationFullRefs",
+    "Situations",
+    "SortingMethod",
+    "Speed",
+    "StartTime",
+    "StaticFareRequest",
+    "StaticFareResult",
+    "StaticInfoUrl",
+    "StatusProblemType",
+    "StopEvent",
+    "StopEventProblemType",
+    "StopEventResponseContext",
+    "StopEventResult",
+    "StopEventType",
+    "StopFareRequest",
+    "StopFareResult",
+    "StopPlace",
+    "StopPlaceName",
+    "StopPlaceRef",
+    "StopPoint",
+    "StopPointName",
+    "Street",
+    "System",
+    "SystemId",
+    "Tag",
+    "TariffZone",
+    "TariffZoneListInArea",
+    "TariffZoneRef",
+    "TariffZoneText",
+    "TariffZones",
+    "TariffzoneFilter",
+    "Text",
+    "TextId",
+    "ThisCall",
+    "TimeAllowance",
+    "TimeBufferAfter",
+    "TimeBufferBefore",
+    "TimeOfOperation",
+    "TimeWindow",
+    "TimeWindowEnd",
+    "TimeWindowStart",
+    "TimedLeg",
+    "TimetabledTime",
+    "To",
+    "ToLegIdRef",
+    "ToStopSeqNumber",
+    "ToStopSequenceNumber",
+    "ToTripIdRef",
+    "TopographicPlace",
+    "TopographicPlaceCode",
+    "TopographicPlaceName",
+    "TopographicPlaceRef",
+    "TrackSection",
+    "TrackSectionEnd",
+    "TrackSectionStart",
+    "TrainNumber",
+    "TransferLeg",
+    "TransferLimit",
+    "TransferType",
+    "Transfers",
+    "Transition",
+    "TravelDurationEstimate",
+    "Traveller",
+    "Trip",
+    "TripChangeProblemType",
+    "TripContext",
+    "TripFare",
+    "TripFareProductReference",
+    "TripFareRequest",
+    "TripFareResult",
+    "TripId",
+    "TripInfoProblemType",
+    "TripInfoResponseContext",
+    "TripInfoResult",
+    "TripLocation",
+    "TripParams",
+    "TripProblemType",
+    "TripResponseContext",
+    "TripResult",
+    "TripSummary",
+    "TripSummaryOnly",
+    "TurnAction",
+    "TurnDescription",
+    "Type",
+    "UndefinedDelay",
+    "UnknownLegRef",
+    "Unplanned",
+    "UnplannedStop",
+    "UpperLeft",
+    "Url",
+    "Usage",
+    "UseRealTimeData",
+    "UseRealtimeData",
+    "UserText",
+    "ValidFor",
+    "ValidityAreaText",
+    "ValidityDuration",
+    "ValidityDurationText",
+    "ValidityPeriod",
+    "ValidityTariffZones",
+    "Value",
+    "VatRate",
+    "VehicleFilter",
+    "VehicleRef",
+    "Via",
+    "ViaPoint",
+    "ViaSystem",
+    "VisuallyImpaired",
+    "WaitDuration",
+    "WalkDistance",
+    "WalkDuration",
+    "WalkSpeed",
+    "WalkingFrame",
+    "WalkingImpaired",
+    "WalkingStick",
+    "Weekday",
+    "WheelchairAccessible",
+    "WheelchairUser",
+    "ZonesAlreadyPaid"
+  ],
+  "types": {
+    "PlaceContextStructure": [
+      {
+        "min": 1,
+        "choice": true,
+        "name": "PlaceRef",
+        "type": "PlaceRefStructure"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "name": "TripLocation",
+        "type": "TripLocationStructure"
+      },
+      {
+        "min": 0,
+        "choice": true,
+        "name": "DepArrTime",
+        "type": "xs:dateTime"
+      },
+      {
+        "min": 0,
+        "choice": true,
+        "name": "TimeAllowance",
+        "type": "xs:duration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IndividualTransportOption",
+        "type": "IndividualTransportOptionStructure"
+      }
+    ],
+    "InitialLocationInputStructure": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Name",
+        "type": "xs:string"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "GeoPosition",
+        "type": "siri:LocationStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "GeoRestriction",
+        "type": "GeoRestrictionsStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "AllowedSystem",
+        "type": "siri:ParticipantRefStructure"
+      }
+    ],
+    "PlaceParamStructure": [
+      {
+        "group_ref": "PlaceDataFilterGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "group_ref": "PlacePolicyGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "group_ref": "PlaceSortingGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Extension",
+        "type": "xs:anyType"
+      }
+    ],
+    "PlaceResultStructure": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ErrorCondition",
+        "type": "OJPErrorStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Place",
+        "type": "PlaceStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Complete",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Probability"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "System",
+        "type": "siri:ParticipantRefStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Operators",
+        "type": "OperatorRefs_RelStructure"
+      }
+    ],
+    "StopPointStructure": [
+      {
+        "group_ref": "StopPointGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PrivateCode",
+        "type": "PrivateCodeStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ParentRef",
+        "type": "StopPlaceRefStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "ref": "TopographicPlaceRef"
+      },
+      {
+        "group_ref": "StopAttributesGroup",
+        "min": 1,
+        "choice": false
+      }
+    ],
+    "StopPlaceStructure": [
+      {
+        "group_ref": "StopPlaceGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PrivateCode",
+        "type": "PrivateCodeStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "ref": "TopographicPlaceRef"
+      },
+      {
+        "group_ref": "StopAttributesGroup",
+        "min": 1,
+        "choice": false
+      }
+    ],
+    "TopographicPlaceStructure": [
+      {
+        "min": 1,
+        "choice": false,
+        "name": "TopographicPlaceCode",
+        "type": "TopographicPlaceCodeType"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "TopographicPlaceName",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PrivateCode",
+        "type": "PrivateCodeStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ParentRef",
+        "type": "TopographicPlaceRefStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ReferredSystem",
+        "type": "siri:ParticipantRefStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Area",
+        "type": "AreaStructure"
+      }
+    ],
+    "PointOfInterestStructure": [
+      {
+        "min": 1,
+        "choice": false,
+        "name": "PublicCode",
+        "type": "PointOfInterestCodeType"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Name",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NameSuffix",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PointOfInterestCategory",
+        "type": "PointOfInterestCategoryStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PrivateCode",
+        "type": "PrivateCodeStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "ref": "TopographicPlaceRef"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "POIAdditionalInformation",
+        "type": "PointOfInterestAdditionalInformationStructure"
+      }
+    ],
+    "AddressStructure": [
+      {
+        "min": 1,
+        "choice": false,
+        "name": "PublicCode",
+        "type": "AddressCodeType"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PrivateCode",
+        "type": "PrivateCodeStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Name",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NameSuffix",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "group_ref": "AddressDetailGroup",
+        "min": 1,
+        "choice": false
+      }
+    ],
+    "PlaceStructure": [
+      {
+        "min": 1,
+        "choice": true,
+        "name": "StopPoint",
+        "type": "StopPointStructure"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "name": "StopPlace",
+        "type": "StopPlaceStructure"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "name": "TopographicPlace",
+        "type": "TopographicPlaceStructure"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "name": "PointOfInterest",
+        "type": "PointOfInterestStructure"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "name": "Address",
+        "type": "AddressStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Name",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "GeoPosition",
+        "type": "siri:LocationStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Mode",
+        "type": "ModeStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "AccessModeList",
+        "type": "AccessModesListOfEnumerations"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "SituationFullRefs",
+        "type": "SituationRefList"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Attribute",
+        "type": "GeneralAttributeStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Extension",
+        "type": "xs:anyType"
+      }
+    ],
+    "PlaceRefStructure": [
+      {
+        "group_ref": "PlaceRefGroup",
+        "min": 1,
+        "choice": false
+      }
+    ],
+    "StopEventParamStructure": [
+      {
+        "group_ref": "StopEventDataFilterGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "group_ref": "StopEventPolicyGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "group_ref": "StopEventContentFilterGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Extension",
+        "type": "xs:anyType"
+      }
+    ],
+    "TripParamStructure": [
+      {
+        "group_ref": "TripDataFilterGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "group_ref": "TripMobilityFilterGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "group_ref": "TripPolicyGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "group_ref": "TripContentFilterGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "FareParam",
+        "type": "FareParamStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Extension",
+        "type": "xs:anyType"
+      }
+    ],
+    "ContinuousLegStructure": [
+      {
+        "min": 1,
+        "choice": false,
+        "name": "LegStart",
+        "type": "PlaceRefStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "LegEnd",
+        "type": "PlaceRefStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Service",
+        "type": "ContinuousServiceStructure"
+      },
+      {
+        "group_ref": "TimeWindowGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Duration",
+        "type": "xs:duration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "LegDescription",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Length",
+        "type": "LengthType"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "LegTrack",
+        "type": "LegTrackStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PathGuidance",
+        "type": "PathGuidanceStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Feasibility",
+        "type": "FeasibilityEnumeration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "SituationFullRefs",
+        "type": "SituationRefList"
+      },
+      {
+        "group_ref": "SustainabilityGroup",
+        "min": 0,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Extension",
+        "type": "xs:anyType"
+      }
+    ],
+    "LegBoardStructure": [
+      {
+        "group_ref": "StopPointGroup",
+        "min": 1,
+        "choice": true
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "name": "GeoPosition",
+        "type": "siri:LocationStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ServiceArrival",
+        "type": "ServiceArrivalStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "ServiceDeparture",
+        "type": "ServiceDepartureStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "DistributorInterchangeId",
+        "type": "xs:normalizedString"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "MeetsViaRequest",
+        "type": "xs:boolean"
+      },
+      {
+        "group_ref": "StopCallStatusGroup",
+        "min": 1,
+        "choice": false
+      }
+    ],
+    "LegAlightStructure": [
+      {
+        "group_ref": "StopPointGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "ServiceArrival",
+        "type": "ServiceArrivalStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ServiceDeparture",
+        "type": "ServiceDepartureStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "FeederInterchangeId",
+        "type": "xs:normalizedString"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "MeetsViaRequest",
+        "type": "xs:boolean"
+      },
+      {
+        "group_ref": "StopCallStatusGroup",
+        "min": 1,
+        "choice": false
+      }
+    ]
+  },
+  "groups": {
+    "StopCallStatusGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Order",
+        "type": "xs:positiveInteger"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "RequestStop",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "UnplannedStop",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NotServicedStop",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoBoardingAtStop",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoAlightingAtStop",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "ref": "siri:ExpectedDepartureOccupancy"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "ref": "siri:ExpectedDepartureCapacities"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Attribute",
+        "type": "GeneralAttributeStructure"
+      }
+    ],
+    "StopPointGroup": [
+      {
+        "min": 1,
+        "choice": false,
+        "ref": "siri:StopPointRef"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "StopPointName",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NameSuffix",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PlannedQuay",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "EstimatedQuay",
+        "type": "InternationalTextStructure"
+      }
+    ],
+    "SustainabilityGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "EmissionCO2",
+        "type": "EmissionCO2Structure"
+      }
+    ],
+    "TimeWindowGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TimeWindowStart",
+        "type": "xs:dateTime"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TimeWindowEnd",
+        "type": "xs:dateTime"
+      }
+    ],
+    "TripContentFilterGroup": [
+      {
+        "group_ref": "BaseTripContentFilterGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeIntermediateStops",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeFare",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeOperatingDays",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TripSummaryOnly",
+        "type": "xs:boolean"
+      }
+    ],
+    "BaseTripContentFilterGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeTrackSections",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeLegProjection",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeTurnDescription",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeAccessFeatures",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeAccessFeaturesStatus",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeAccessibilityDetails",
+        "type": "AccessibilityDetailsProfileEnumeration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludePlacesContext",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeSituationsContext",
+        "type": "xs:boolean"
+      }
+    ],
+    "TripPolicyGroup": [
+      {
+        "group_ref": "BaseTripPolicyGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": true,
+        "name": "MotorisedMainTravelMode",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": true,
+        "name": "ItModeToCover",
+        "type": "ItModesStructure"
+      },
+      {
+        "min": 0,
+        "choice": true,
+        "name": "IncludeAlternativeOptions",
+        "type": "xs:boolean"
+      }
+    ],
+    "BaseTripPolicyGroup": [
+      {
+        "min": 0,
+        "choice": true,
+        "name": "NumberOfResults",
+        "type": "xs:positiveInteger"
+      },
+      {
+        "group_ref": "NumberOfResultsGroup",
+        "min": 0,
+        "choice": true
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TimeWindow",
+        "type": "xs:duration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "UseRealtimeData",
+        "type": "UseRealtimeDataEnumeration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ImmediateTripStart",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TransferLimit",
+        "type": "xs:nonNegativeInteger"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "OptimisationMethod",
+        "type": "OptimisationMethodEnumeration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ConsiderElevationData",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeAllRestrictedLines",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PassengerCategory",
+        "type": "PassengerCategoryEnumeration"
+      }
+    ],
+    "NumberOfResultsGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NumberOfResultsBefore",
+        "type": "xs:nonNegativeInteger"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NumberOfResultsAfter",
+        "type": "xs:nonNegativeInteger"
+      }
+    ],
+    "TripMobilityFilterGroup": [
+      {
+        "group_ref": "BaseTripMobilityFilterGroup",
+        "min": 1,
+        "choice": false
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "BikeTransport",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "WalkSpeed",
+        "type": "OpenPercentType"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "AdditionalTransferTime",
+        "type": "xs:duration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "HikingProfile"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "CyclingProfile"
+      }
+    ],
+    "BaseTripMobilityFilterGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoSingleStep",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoStairs",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoEscalator",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoElevator",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoRamp",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoSight",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoTravelator",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "LevelEntrance",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "LevelEntranceOrBoardingAid",
+        "type": "xs:boolean"
+      }
+    ],
+    "TripDataFilterGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ModeAndModeOfOperationFilter",
+        "type": "ModeAndModeOfOperationFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "LineFilter",
+        "type": "LineDirectionFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "OperatorFilter",
+        "type": "OperatorFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "VehicleFilter",
+        "type": "VehicleFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TariffzoneFilter",
+        "type": "TariffzoneFilterStructure"
+      }
+    ],
+    "StopEventContentFilterGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludePreviousCalls",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeOnwardCalls",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeOperatingDays",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "UseRealtimeData",
+        "type": "UseRealtimeDataEnumeration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludePlacesContext",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeSituationsContext",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeStopHierarchy",
+        "type": "HierarchyEnumeration"
+      }
+    ],
+    "StopEventPolicyGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NumberOfResults",
+        "type": "xs:positiveInteger"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TimeWindow",
+        "type": "xs:duration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "StopEventType",
+        "type": "StopEventTypeEnumeration"
+      }
+    ],
+    "StopEventDataFilterGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ModeFilter",
+        "type": "ModeFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "LineFilter",
+        "type": "LineDirectionFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "OperatorFilter",
+        "type": "OperatorFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeAllRestrictedLines",
+        "type": "xs:boolean"
+      }
+    ],
+    "PlaceRefGroup": [
+      {
+        "min": 1,
+        "choice": true,
+        "ref": "siri:StopPointRef"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "ref": "StopPlaceRef"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "name": "GeoPosition",
+        "type": "siri:LocationStructure"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "ref": "TopographicPlaceRef"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "ref": "PointOfInterestRef"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "ref": "AddressRef"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Name",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "AllowedSystemId",
+        "type": "xs:normalizedString"
+      }
+    ],
+    "AddressDetailGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "CountryName",
+        "type": "xs:string"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PostCode",
+        "type": "xs:string"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TopographicPlaceName",
+        "type": "xs:string"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "ref": "TopographicPlaceRef"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Street",
+        "type": "xs:string"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "HouseNumber",
+        "type": "xs:string"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "CrossRoad",
+        "type": "xs:string"
+      }
+    ],
+    "StopAttributesGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "WheelchairAccessible",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Lighting",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Covered",
+        "type": "xs:boolean"
+      }
+    ],
+    "StopPlaceGroup": [
+      {
+        "min": 1,
+        "choice": false,
+        "ref": "StopPlaceRef"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "StopPlaceName",
+        "type": "InternationalTextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NameSuffix",
+        "type": "InternationalTextStructure"
+      }
+    ],
+    "PlaceSortingGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "SortingMethod",
+        "type": "xs:string"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "GeoPosition",
+        "type": "siri:LocationStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "MinimalProbability",
+        "type": "xs:float"
+      }
+    ],
+    "PlacePolicyGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Language",
+        "type": "xs:language"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NumberOfResults",
+        "type": "xs:positiveInteger"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ContinueAt",
+        "type": "xs:nonNegativeInteger"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludePtModes",
+        "type": "xs:boolean"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "IncludeOperators",
+        "type": "xs:boolean"
+      }
+    ],
+    "PlaceDataFilterGroup": [
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Type",
+        "type": "PlaceTypeEnumeration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Usage",
+        "type": "PlaceUsageEnumeration"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Modes",
+        "type": "ModeFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "OperatorFilter",
+        "type": "OperatorFilterStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "TopographicPlaceRef",
+        "type": "TopographicPlaceRefStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "PointOfInterestFilter",
+        "type": "PointOfInterestFilterStructure"
+      }
+    ],
+    "TripRequestGroup": [
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Origin",
+        "type": "PlaceContextStructure"
+      },
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Destination",
+        "type": "PlaceContextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Via",
+        "type": "TripViaStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "ViaSystem",
+        "type": "siri:ParticipantRefStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NotVia",
+        "type": "NotViaStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "NoChangeAt",
+        "type": "NoChangeAtStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Params",
+        "type": "TripParamStructure"
+      }
+    ],
+    "StopEventRequestGroup": [
+      {
+        "min": 1,
+        "choice": false,
+        "name": "Location",
+        "type": "PlaceContextStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Params",
+        "type": "StopEventParamStructure"
+      }
+    ],
+    "LocationInformationRequestGroup": [
+      {
+        "min": 1,
+        "choice": true,
+        "name": "InitialInput",
+        "type": "InitialLocationInputStructure"
+      },
+      {
+        "min": 1,
+        "choice": true,
+        "name": "PlaceRef",
+        "type": "PlaceRefStructure"
+      },
+      {
+        "min": 0,
+        "choice": false,
+        "name": "Restrictions",
+        "type": "PlaceParamStructure"
+      }
+    ]
+  },
+  "enumerations": {
+    "UseRealtimeDataEnumeration": [
+      "full",
+      "explanatory",
+      "none"
+    ],
+    "PlaceTypeEnumeration": [
+      "stop",
+      "address",
+      "poi",
+      "coord",
+      "location",
+      "topographicPlace"
+    ],
+    "StopEventTypeEnumeration": [
+      "departure",
+      "arrival",
+      "both"
+    ]
+  }
+}
