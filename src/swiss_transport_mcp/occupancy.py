@@ -20,6 +20,7 @@ und cachen sie lokal, um Rate Limits zu schonen.
 
 from datetime import date
 
+from .api_client import UpstreamSchemaError
 from .api_infrastructure import APIError, TransportAPIClient
 
 # Betreiber-Mapping: Code → Name
@@ -226,7 +227,29 @@ async def _fetch_occupancy_data(
         )
 
         if isinstance(result, dict) and result.get("success"):
-            resources = result.get("result", {}).get("resources", [])
+            # `result.get("result", {}).get("resources", [])` machte aus einer
+            # Strukturänderung eine leere Ressourcenliste: Die Schleife lief
+            # nullmal, die Funktion gab `None` zurück, und der Aufrufer las das
+            # als «für diesen Betreiber und Tag gibt es keine Belegungsdaten»
+            # (FID-006).
+            #
+            # Der Fehler landet im `except Exception` unten und löst damit den
+            # Direkt-URL-Fallback aus — besser als eine leere Schleife, aber die
+            # Stille ist damit nicht beseitigt: Schlägt auch der Fallback fehl,
+            # steht am Ende wieder `None`. Den pauschalen `except`-Zweig zu
+            # schärfen ist eine eigene Änderung und nicht Teil dieses Fixes.
+            if "result" not in result:
+                raise UpstreamSchemaError(
+                    "CKAN `package_show` (Belegungsdaten): Antwort ohne "
+                    f"`result`. Vorhandene Schlüssel: {sorted(result)}."
+                )
+            package = result["result"]
+            if not isinstance(package, dict) or "resources" not in package:
+                raise UpstreamSchemaError(
+                    "CKAN `package_show` (Belegungsdaten): `result` ohne "
+                    f"`resources`. Vorhanden: {sorted(package) if isinstance(package, dict) else type(package).__name__}."
+                )
+            resources = package["resources"]
             target_name = f"{operator_ref}_{operation_date}"
 
             for resource in resources:
