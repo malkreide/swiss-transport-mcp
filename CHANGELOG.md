@@ -5,6 +5,48 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Hinzugefuegt — die Live-Suite laeuft geplant, statt nur markiert zu sein
+
+`ci.yml` faehrt `pytest tests/ -m "not live"`. Das ist richtig — ein fremder 503
+darf keinen fremden Pull Request rot machen — und es liess die Live-Tests seit
+ihrer Entstehung an keiner Stelle laufen. **`-m "not live"` ist kein Ort, an dem
+Tests laufen; es ist die Abwesenheit eines solchen.**
+
+Ausgerechnet sie sind die einzigen im Repo, die einer falschen Grundannahme
+ueber opentransportdata.swiss widersprechen koennen: Jeder andere Test prueft gegen eine
+Fixture, und die Fixture ist aus derselben Annahme geschrieben wie der Code. Bei
+`meteoswiss-mcp` fielen am 30.7.2026 beim ersten Lauf seit Monaten drei von sechs
+Tests; bei `zh-education-mcp` lief am 3.8.2026 der Code monatelang gegen
+umbenannte Feldnamen, ohne dass ein Test rot wurde.
+
+`.github/workflows/live-tests.yml`: montags 05:19 UTC auf einer ungeraden Minute, dazu
+`workflow_dispatch`. Der PR-Lauf bleibt unveraendert — dies ist ein
+*zusaetzlicher* Lauf, kein Umbau.
+
+**Drei Antworten, nicht zwei.** `if: failure()` kennt rot und nicht rot; ein
+gescheitertes `pip install` saehe damit aus wie ein gebrochener Vertrag mit der
+Quelle. `scripts/classify_live_run.py` liest deshalb das JUnit-XML und trennt
+`clear`, `finding` und `unknown`. Ein `unknown` schliesst nie ein Issue:
+zuzumachen hiesse zu behaupten, der Vergleich sei gelaufen.
+
+Der Fall, der die Einordnung noetig macht, ist der uebersprungene Lauf: pytest
+endet mit 0, wenn jeder Test uebersprungen wurde. `tests - skipped == 0` ist
+deshalb `unknown` — gemessen am 7.8.2026 an `swiss-transport-mcp`, wo ohne
+`TRANSPORT_API_KEY` alle sechs Live-Tests uebersprungen werden und ein
+Exit-Code-Check gruen gemeldet haette.
+
+Die Einordnung steht in einem Skript mit eigenem Test, nicht in einem
+`run:`-Block: Sie entscheidet, ob ein Issue auf- oder zugeht, und das ist der
+einzige Teil des Workflows, der etwas behauptet.
+
+Ein Issue mit stabilem Titel-Praefix und Label `upstream` wird kommentiert statt
+verdoppelt. Die pytest-Ausgabe geht ueber `env` ins Skript, nicht ueber `${ }`
+— sie ist fremder Text, der sonst in einem JavaScript-Template-Literal landet.
+
+Kadenz und Zustaendigkeit stehen in CONTRIBUTING (beide Sprachen). Gemessen mit
+`live_schedule_probe` aus `mcp-continuous-auditor`: vorher `LIVE_UNSCHEDULED`,
+jetzt `LIVE_SCHEDULED`.
+
 ### Added
 
 - **Retry-Politik gegenüber opentransportdata.swiss** (ARCH-014), in einem
