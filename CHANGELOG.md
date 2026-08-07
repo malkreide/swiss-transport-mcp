@@ -7,6 +7,24 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Der Fix vom 2026-08-07 bestätigte `result` und hörte dort auf.** Das
+  Katalog-Werkzeug las danach weiter `result.get("results", [])`, und eine
+  Strukturänderung eine Ebene tiefer ergab weiterhin eine leere Datensatzliste
+  — dieselbe Antwort wie eine korrekte Suche ohne Treffer.
+
+  Dass ein Fix seine eigene Ebene bestätigt und die nächste offen lässt, ist
+  die häufigste Form dieses Fehlers: Er **wandert nach unten**, statt zu
+  verschwinden.
+
+  Die Lesestelle läuft jetzt über `ckan_results()`, das `results` bestätigt.
+  `package_search` liefert den Schlüssel auch bei null Treffern; eine echte
+  leere Suche bleibt unverändert.
+
+  Nachtrag zum Portfolio-Durchlauf
+  ([`FID-006`](https://github.com/malkreide/mcp-audit-skill/blob/main/checks/FID-006.md)).
+
+### Fixed
+
 - **Zwei CKAN-Stellen schrieben eine Strukturänderung in eine Leermenge um.**
 
   `api_client.ckan_request` gab `data.get("result", {})` zurück. Fehlt `result`,

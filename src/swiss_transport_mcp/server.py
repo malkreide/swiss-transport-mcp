@@ -756,7 +756,7 @@ async def transport_search_datasets(params: DatasetSearchInput) -> DatasetSearch
         )
 
         datasets = []
-        for pkg in result.get("results", []):
+        for pkg in api_client.ckan_results(result):
             ds: dict[str, Any] = {
                 "id": pkg.get("name"),
                 "title": pkg.get("title"),

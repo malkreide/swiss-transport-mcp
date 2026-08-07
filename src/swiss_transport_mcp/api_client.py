@@ -156,6 +156,31 @@ class UpstreamSchemaError(ValueError):
     """
 
 
+def ckan_results(result: object) -> list:
+    """Die Trefferliste eines bestaetigten ``result``-Blocks, oder laut scheitern.
+
+    Der Fix vom 2026-08-07 bestaetigte ``result`` in ``ckan_request`` und hoerte
+    dort auf. Die Ebene darunter blieb offen: ``result.get("results", [])`` im
+    Katalog-Werkzeug machte aus einer Strukturaenderung weiterhin eine leere
+    Datensatzliste — dieselbe Antwort wie eine korrekte Suche ohne Treffer
+    (FID-006).
+
+    ``package_search`` liefert ``results`` immer, auch bei null Treffern.
+    Bestaetigt wird die Anwesenheit, nicht der Inhalt.
+    """
+    if not isinstance(result, dict):
+        raise UpstreamSchemaError(
+            f"CKAN `package_search`: `result` ist {type(result).__name__} und kein Objekt."
+        )
+    if "results" not in result:
+        raise UpstreamSchemaError(
+            "CKAN `package_search`: `result` ohne `results`. Vorhandene "
+            f"Schluessel: {sorted(result)}. CKAN liefert `results` auch bei null "
+            "Treffern — dies ist keine leere Suche."
+        )
+    return result["results"]
+
+
 async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     """Make a CKAN API request.
 

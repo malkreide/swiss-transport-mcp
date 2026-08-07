@@ -26,6 +26,7 @@ from swiss_transport_mcp.api_client import (
     CKAN_API_URL,
     UpstreamSchemaError,
     ckan_request,
+    ckan_results,
 )
 
 
@@ -160,3 +161,52 @@ async def test_a_healthy_envelope_does_not_touch_the_fallback():
 
     assert out == {"trains": ["ok"]}
     assert not direct.called, "der Fallback darf im Normalfall nicht anspringen"
+
+
+# --- Die Ebene unter `result` ------------------------------------------------
+
+
+class TestCkanResults:
+    """Der Rest, den der Fix vom 2026-08-07 offen liess.
+
+    Damals bestaetigte `ckan_request` den `result`-Block und hoerte dort auf.
+    Das Katalog-Werkzeug las danach weiter `result.get("results", [])`, und eine
+    Strukturaenderung eine Ebene tiefer ergab weiterhin eine leere
+    Datensatzliste — dieselbe Antwort wie eine korrekte Suche ohne Treffer.
+
+    Dass ein Fix seine eigene Ebene bestaetigt und die naechste offen laesst,
+    ist die haeufigste Form dieses Fehlers: Er wandert nach unten statt zu
+    verschwinden.
+    """
+
+    def test_a_result_without_results_is_rejected(self):
+        with pytest.raises(UpstreamSchemaError) as excinfo:
+            ckan_results({"count": 0, "sort": "score desc"})
+        message = str(excinfo.value)
+        assert "'sort'" in message, message
+        assert "keine leere Suche" in message
+
+    def test_a_non_object_result_is_rejected(self):
+        with pytest.raises(UpstreamSchemaError) as excinfo:
+            ckan_results(["a"])
+        assert "list" in str(excinfo.value)
+
+    def test_an_empty_search_still_passes(self):
+        assert ckan_results({"count": 0, "results": []}) == []
+
+    def test_a_normal_search_still_passes(self):
+        rows = [{"name": "a"}]
+        assert ckan_results({"count": 1, "results": rows}) == rows
+
+    def test_the_catalogue_tool_uses_the_helper(self):
+        """Der einzige Test hier mit Zaehnen.
+
+        Die vier darueber rufen den Helfer direkt auf; der ist korrekt und
+        bleibt gruen, auch wenn er nirgends haengt.
+        """
+        from pathlib import Path
+
+        source = Path(__file__).parent.parent / "src" / "swiss_transport_mcp" / "server.py"
+        body = source.read_text(encoding="utf-8")
+        assert "api_client.ckan_results(result)" in body
+        assert 'result.get("results", [])' not in body
