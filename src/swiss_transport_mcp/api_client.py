@@ -146,6 +146,16 @@ async def ojp_request(xml_body: str, version: str = "v2") -> str:
 # ---------------------------------------------------------------------------
 
 
+class UpstreamSchemaError(ValueError):
+    """Die Antwort kam an, sieht aber anders aus, als der Code sie liest.
+
+    Von einem CKAN-Fehler (``success: false``) getrennt: Dort hat die Quelle
+    geantwortet und Nein gesagt, hier hat sie ihre Form geändert. Erbt von
+    ``ValueError``, weil die Docstrings der Aufrufer bereits ``ValueError`` als
+    Fehlerfall der CKAN-Schicht führen.
+    """
+
+
 async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     """Make a CKAN API request.
 
@@ -203,7 +213,13 @@ async def ckan_request(action: str, params: dict[str, Any] | None = None) -> dic
                     msg = error.get("message", str(error))
                     raise ValueError(f"CKAN API error: {msg}")
 
-                return data.get("result", {})
+                if "result" not in data:
+                    raise UpstreamSchemaError(
+                        f"CKAN `{action}`: Antwort ohne `result`. Vorhandene "
+                        f"Schlüssel: {sorted(data)}. Das ist keine Leermenge — "
+                        "die Struktur der Quelle hat sich geändert."
+                    )
+                return data["result"]
 
             return await call_with_retry(_attempt, label="ckan")
 

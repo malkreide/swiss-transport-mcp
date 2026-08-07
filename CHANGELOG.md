@@ -5,6 +5,40 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Zwei CKAN-Stellen schrieben eine Strukturänderung in eine Leermenge um.**
+
+  `api_client.ckan_request` gab `data.get("result", {})` zurück. Fehlt `result`,
+  bekam jeder der drei Aufrufer ein leeres Objekt — bei `package_list`, dessen
+  `result` eine **Liste** ist, sogar eines vom falschen Typ. Der Ersatzwert war
+  also doppelt falsch.
+
+  `occupancy._fetch_occupancy_data` las
+  `result.get("result", {}).get("resources", [])`. Die Schleife über die
+  Ressourcen lief dann nullmal, die Funktion gab `None` zurück, und der
+  Aufrufer las das als «für diesen Betreiber und Tag gibt es keine
+  Belegungsdaten». Der Direkt-URL-Fallback im `except`-Zweig wurde dabei
+  **nie erreicht**, weil gar keine Ausnahme flog.
+
+  Beide Stellen bestätigen `result` jetzt und werfen sonst
+  `UpstreamSchemaError`, mit den tatsächlich vorhandenen Schlüsseln in der
+  Meldung. Ein echter CKAN-Fehler (`success: false`) bleibt ein einfacher
+  `ValueError`, und `result: []` bleibt ein normales Ergebnis — bestätigt wird
+  die Anwesenheit des Schlüssels, nicht sein Inhalt.
+
+  **Was das nicht behebt, und es steht als Kommentar an der Stelle:** Im
+  Belegungspfad landet der Strukturfehler im pauschalen `except Exception` und
+  löst den Direkt-URL-Fallback aus. Das ist besser als eine leere Schleife,
+  beseitigt die Stille aber nicht — schlägt auch der Fallback fehl, steht am
+  Ende wieder `None`. Den pauschalen `except`-Zweig zu schärfen ist eine eigene
+  Änderung.
+
+  Gefunden im Portfolio-Durchlauf zu
+  [`FID-006`](https://github.com/malkreide/mcp-audit-skill/blob/main/checks/FID-006.md)
+  am 2026-08-07: Acht Server im Portfolio sprechen mit CKAN, alle acht prüfen
+  das `success`-Envelope, sieben defaulteten `result` danach.
+
 ### Behoben — jede OJP-Anfrage dieses Servers war ungueltig
 
 Aufgezeichnet wurde am 7.8.2026 der OJP-2.0-Vertrag: das oeffentliche XML-Schema
