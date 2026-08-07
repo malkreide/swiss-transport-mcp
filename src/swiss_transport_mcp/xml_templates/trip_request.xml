@@ -9,22 +9,22 @@
         <Origin>
           <PlaceRef>
             {origin_ref}
-            <n><Text>{origin_name}</Text></n>
+            <Name><Text>{origin_name}</Text></Name>
           </PlaceRef>
           <DepArrTime>{dep_time}</DepArrTime>
         </Origin>
         <Destination>
           <PlaceRef>
             {destination_ref}
-            <n><Text>{destination_name}</Text></n>
+            <Name><Text>{destination_name}</Text></Name>
           </PlaceRef>
         </Destination>
         <Params>
           <NumberOfResults>{limit}</NumberOfResults>
-          <IncludeIntermediateStops>false</IncludeIntermediateStops>
-          <IncludeRealtimeData>true</IncludeRealtimeData>
+          <UseRealtimeData>full</UseRealtimeData>
           <IncludeLegProjection>false</IncludeLegProjection>
           <IncludeTurnDescription>false</IncludeTurnDescription>
+          <IncludeIntermediateStops>false</IncludeIntermediateStops>
         </Params>
       </OJPTripRequest>
     </siri:ServiceRequest>

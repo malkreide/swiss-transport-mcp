@@ -520,6 +520,52 @@ async def transport_nearby_stops(params: SearchStopByCoordInput) -> NearbyStopsR
 
 
 # ---------------------------------------------------------------------------
+# Resolving a name to a stop id
+# ---------------------------------------------------------------------------
+
+
+class PlaceNotResolved(ValueError):
+    """A place name that no stop could be found for.
+
+    A ``ValueError`` on purpose: ``handle_api_error`` passes those through with
+    their own text, so the caller reads "No stop found for 'Zueri HB'" and not
+    a masked generic message. The distinction matters -- "I could not find that
+    place" and "there is no connection" are different answers.
+    """
+
+
+async def _resolve_place(ref: str) -> tuple[str, str]:
+    """Turn a stop id *or* a place name into ``(stop_id, display_name)``.
+
+    OJP 2.0 has no name-only place reference: a ``PlaceRef`` must carry one of
+    six real reference elements (``PlaceRefGroup``), and free text is not among
+    them. The previous code sent ``<LocationName>`` -- the OJP 1.0 spelling,
+    dropped in 2.0 -- so every request built from a name asked for nothing and
+    the tool reported "no trips found". A failure that looks like an answer.
+
+    The tools document that names work, so the fix is to make that true rather
+    than withdraw it: resolve the name the way the caller would have to, with
+    one location lookup, and take the best match. When nothing matches, say so
+    with the name in it -- an empty trip list reads as "there is no connection"
+    rather than "I could not find that place".
+    """
+    if ref.isdigit():
+        return ref, ref
+
+    xml_response = await api_client.ojp_request(ojp_client.build_location_request(ref, limit=1))
+    error = ojp_client.parse_error_response(xml_response)
+    if error:
+        raise PlaceNotResolved(f"Could not look up '{ref}': {error}")
+
+    locations = ojp_client.parse_location_response(xml_response)
+    if not locations or not locations[0].get("stop_id"):
+        raise PlaceNotResolved(
+            f"No stop found for '{ref}'. Use transport_search_stop to find the exact name."
+        )
+    return locations[0]["stop_id"], locations[0].get("name") or ref
+
+
+# ---------------------------------------------------------------------------
 # Tool 2: Departures / Arrivals
 # ---------------------------------------------------------------------------
 
@@ -548,9 +594,10 @@ async def transport_departures(params: DeparturesInput, ctx: Context) -> Departu
     """
     try:
         await ctx.info(f"Fetching {params.event_type}s for stop {params.stop_id}")
+        stop_id, resolved_name = await _resolve_place(params.stop_id)
         xml_request = ojp_client.build_stop_event_request(
-            stop_ref=params.stop_id,
-            stop_name=params.stop_name,
+            stop_ref=stop_id,
+            stop_name=params.stop_name or resolved_name,
             dep_arr_time=params.time,
             limit=params.limit,
             event_type=params.event_type,
@@ -624,9 +671,13 @@ async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> TripPlanRe
     """
     try:
         await ctx.info(f"Planning trip {params.origin} → {params.destination}")
+        origin_id, origin_name = await _resolve_place(params.origin)
+        destination_id, destination_name = await _resolve_place(params.destination)
         xml_request = ojp_client.build_trip_request(
-            origin_ref=params.origin,
-            destination_ref=params.destination,
+            origin_ref=origin_id,
+            destination_ref=destination_id,
+            origin_name=origin_name,
+            destination_name=destination_name,
             dep_time=params.time,
             limit=params.limit,
         )

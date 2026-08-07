@@ -143,11 +143,26 @@ def build_trip_request(
 
 
 def _build_place_ref(ref: str) -> str:
-    """StopPlaceRef for numeric IDs, LocationName for text."""
+    """Build the reference element that goes inside a ``PlaceRef``.
+
+    OJP 2.0 allows exactly one of ``siri:StopPointRef``, ``StopPlaceRef``,
+    ``GeoPosition``, ``TopographicPlaceRef``, ``PointOfInterestRef`` or
+    ``AddressRef`` here (``PlaceRefGroup``). A free-text name is **not** among
+    them -- there is no "find the place that goes by this name" form inside a
+    ``PlaceRef``.
+
+    This used to emit ``<LocationName><Text>…</Text></LocationName>`` for
+    anything non-numeric: the OJP 1.0 spelling, and no element at all in 2.0.
+    The request still went out and the tool still answered -- with "no trips
+    found". A failure that looks like an answer. Refusing is louder and
+    cheaper; the caller resolves the name to a stop id first.
+    """
     if ref.isdigit():
         return f"<StopPlaceRef>{ref}</StopPlaceRef>"
-    else:
-        return f"<LocationName><Text>{_escape_xml(ref)}</Text></LocationName>"
+    raise ValueError(
+        f"{ref!r} is not a stop id. OJP 2.0 has no name-only place reference; "
+        "resolve the name with transport_search_stop and pass the stop_id."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -162,11 +177,21 @@ def parse_location_response(xml_text: str) -> list[dict[str, Any]]:
     for place_result in _findall_iter(root, "PlaceResult"):
         loc: dict[str, Any] = {}
 
-        stop_ref = _text(place_result, ".//StopPlaceRef")
+        # A place carries its id under one of five type-specific elements.
+        # Reading only StopPlaceRef loses the quay/platform results, which are
+        # StopPoints and carry siri:StopPointRef.
+        stop_ref = _text(place_result, ".//StopPlaceRef") or _text(
+            place_result, ".//siri:StopPointRef"
+        )
         if stop_ref:
             loc["stop_id"] = stop_ref
 
-        name = _text(place_result, ".//StopPlaceName/Text")
+        # `PlaceStructure` carries a mandatory `Name` for *every* place type;
+        # only StopPlace additionally has a `StopPlaceName`. Reading the
+        # type-specific one alone dropped stop points, addresses, topographic
+        # places and POIs on the floor -- see the `if loc.get("name")` guard
+        # below, which then reported them as "not found".
+        name = _text(place_result, ".//Name/Text") or _text(place_result, ".//StopPlaceName/Text")
         if name:
             loc["name"] = name
 
@@ -373,7 +398,11 @@ def _parse_leg(leg_el: ET.Element) -> dict[str, Any] | None:
         for endpoint, key in [("LegStart", "from"), ("LegEnd", "to")]:
             ep = _find(continuous, f".//{endpoint}")
             if ep is not None:
-                n = _text(ep, ".//StopPointName/Text") or _text(ep, ".//LocationName/Text")
+                # LegStart/LegEnd are PlaceRefs, and a PlaceRef carries its
+                # mandatory display name under `Name` -- never `StopPointName`,
+                # and `LocationName` is the OJP 1.0 spelling that 2.0 dropped.
+                # Both old lookups missed, so walking legs came back unnamed.
+                n = _text(ep, ".//Name/Text")
                 if n:
                     leg[key] = n
         return leg

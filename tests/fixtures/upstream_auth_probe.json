@@ -1,0 +1,29 @@
+{
+  "recorded_at": "2026-08-07",
+  "probes": [
+    {
+      "name": "ojp",
+      "method": "GET",
+      "url": "https://api.opentransportdata.swiss/ojp20",
+      "status": 403
+    },
+    {
+      "name": "ckan",
+      "method": "GET",
+      "url": "https://api.opentransportdata.swiss/ckan-api/package_search?rows=1",
+      "status": 401
+    },
+    {
+      "name": "siri_sx",
+      "method": "GET",
+      "url": "https://api.opentransportdata.swiss/la/siri-sx",
+      "status": 401
+    },
+    {
+      "name": "formation",
+      "method": "GET",
+      "url": "https://api.opentransportdata.swiss/formation/v2/formations_full",
+      "status": 401
+    }
+  ]
+}

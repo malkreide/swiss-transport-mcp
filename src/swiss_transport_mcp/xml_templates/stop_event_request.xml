@@ -9,16 +9,16 @@
         <Location>
           <PlaceRef>
             {place_ref}
-            <n><Text>{stop_name}</Text></n>
+            <Name><Text>{stop_name}</Text></Name>
           </PlaceRef>
           <DepArrTime>{dep_arr_time}</DepArrTime>
         </Location>
         <Params>
           <NumberOfResults>{limit}</NumberOfResults>
           <StopEventType>{event_type}</StopEventType>
-          <IncludeRealtimeData>true</IncludeRealtimeData>
           <IncludePreviousCalls>false</IncludePreviousCalls>
           <IncludeOnwardCalls>false</IncludeOnwardCalls>
+          <UseRealtimeData>full</UseRealtimeData>
         </Params>
       </OJPStopEventRequest>
     </siri:ServiceRequest>
