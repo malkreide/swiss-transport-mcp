@@ -35,3 +35,35 @@ Für Integrationstests brauchen Sie einen kostenlosen API-Key von [api-manager.o
 ## Lizenz
 
 MIT – siehe [LICENSE](LICENSE)
+
+## Die Live-Suite: wann sie läuft, und wer ein rotes Ergebnis sieht
+
+**Kadenz:** montags 05:19 UTC, dazu jederzeit von Hand über *Actions → Live-Tests → Run
+workflow*. Siehe [`.github/workflows/live-tests.yml`](.github/workflows/live-tests.yml).
+
+**Wer es sieht:** Ein roter Lauf öffnet ein Issue mit dem Titel `Live-Tests gegen
+opentransportdata.swiss rot …` und dem Label `upstream` — und kommentiert das bestehende, statt
+ein zweites aufzumachen. Wird die Suite wieder grün, wird es geschlossen.
+
+**Drei Antworten, nicht zwei.** `scripts/classify_live_run.py` liest das
+JUnit-XML statt des Exit-Codes und unterscheidet: `clear` (gelaufen, grün),
+`finding` (gelaufen, etwas gefallen) und `unknown` (nicht gelaufen — Installation
+gescheitert, null Tests eingesammelt, alle übersprungen). Ein `unknown` schliesst
+nie ein Issue: Zuzumachen hiesse zu behaupten, der Vergleich sei gelaufen.
+
+**Secret:** Die Live-Tests brauchen `TRANSPORT_API_KEY`. Fehlt es, überspringt pytest alle sechs und endet mit 0 — der Lauf meldet dann `unknown` statt grün, denn ein nicht gesetztes Secret ist kein grüner Vertrag mit der Quelle, sondern gar keiner.
+
+**Ein roter Live-Lauf heisst nicht zwingend «unser Fehler».** Er heisst: Der
+Vertrag mit der Quelle hat sich geändert, oder die Quelle ist gerade aus. Beides
+gehört gesehen, nur das Erste gehört gefixt. Bitte den Lauf lesen, bevor der Job
+deaktiviert wird — so stirbt dieser Check, und er ist der einzige im Repo, der
+einer falschen Grundannahme über opentransportdata.swiss widersprechen kann. Jeder andere Test
+prüft gegen eine Fixture, und die Fixture ist aus derselben Annahme geschrieben
+wie der Code.
+
+Das ist nicht hypothetisch: Bei `meteoswiss-mcp` fielen am 30.7.2026 beim ersten
+Lauf der Live-Suite seit Monaten drei von sechs Tests — der Endpunkt war zwei
+Tage zuvor abgeschafft worden, und niemand hatte die Suite gestartet.
+
+Der PR-Lauf bleibt bei `-m "not live"`: Ein fremder 503 darf keinen fremden Pull
+Request rot machen.
