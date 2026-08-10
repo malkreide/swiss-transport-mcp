@@ -142,6 +142,36 @@ def build_trip_request(
     )
 
 
+_SLOID_PREFIX = "ch:1:sloid:"
+
+
+def sloid_tail(ref: str) -> list[str] | None:
+    """The digit groups after ``ch:1:sloid:``, or ``None`` when ``ref`` is no SLOID.
+
+    Measured on 2026-08-10 against the live source: ``transport_search_stop``
+    now answers with ``ch:1:sloid:3000`` where it used to answer ``8503000``.
+    62 results across four queries, every one of them a SLOID in a
+    ``StopPlaceRef`` -- so this is not a structural change but a change of
+    format inside an unchanged element, which is the kind a schema diff cannot
+    see.
+
+    The DiDok number is gone from the response entirely. What is left beside the
+    SLOID is a ``PrivateCode`` of system ``EFA`` (``108276`` for Zuerich HB) and
+    a ``TopographicPlaceRef`` naming the municipality -- neither is a stop id.
+    Keeping the old ids was therefore not an option that existed.
+
+    The prefix is matched case-insensitively because it arrives from a model as
+    a bare string; the ref itself is passed on verbatim.
+    """
+    if not ref.lower().startswith(_SLOID_PREFIX):
+        return None
+    tail = ref[len(_SLOID_PREFIX) :]
+    parts = tail.split(":")
+    if not tail or not all(p.isdigit() for p in parts):
+        return None
+    return parts
+
+
 def is_stop_ref(ref: str) -> bool:
     """True when ``ref`` is a stop id this client can reference, not a name.
 
@@ -149,8 +179,18 @@ def is_stop_ref(ref: str) -> bool:
     to resolve a name, and ``_build_place_ref`` decides with it which element to
     emit; two copies of the rule would drift, and the drift would show up as a
     lookup for a place named "8503000:0:31".
+
+    Three forms, and the third is why this comment exists. ``8503000`` and
+    ``8503000:0:31`` are the DiDok spellings; the source no longer emits them
+    but still accepts them, so they stay. ``ch:1:sloid:3000`` is what it emits
+    today, and it fell through here: the old rule asked every colon-separated
+    part to be digits, and ``ch`` and ``sloid`` are not. That one ``False``
+    reached the user as ``transport_trip_plan`` refusing the very id
+    ``transport_search_stop`` had just handed it.
     """
     if ref.isdigit():
+        return True
+    if sloid_tail(ref) is not None:
         return True
     parts = ref.split(":")
     return len(parts) > 1 and all(p.isdigit() for p in parts if p)
@@ -182,9 +222,33 @@ def _build_place_ref(ref: str) -> str:
     tool boundary as a bare string, so by the time it comes back there is no
     element left to remember. The colon form is the DIDOK quay notation the
     source itself emits.
+
+    **The shape rule had to be rewritten, because a colon stopped meaning
+    "quay".** It used to be: digits are a station, anything with a colon is a
+    quay. Since 2026-08-10 the source answers with SLOIDs, and
+    ``ch:1:sloid:3000`` is a *station* full of colons -- under the old rule it
+    would have gone out as a ``siri:StopPointRef``, which is the silent half of
+    this failure rather than the loud one.
+
+    Measured: 62 search results across four queries, every single id a SLOID
+    inside a ``StopPlaceRef``, and not one ``siri:StopPointRef`` among them. A
+    plain SLOID is therefore a StopPlace.
+
+    **One branch here is reasoned, not measured, and is marked as such.** A
+    SLOID carrying further groups (``ch:1:sloid:3000:0:31``) has not been seen
+    from this source. It is routed as a StopPoint because that is exactly the
+    station-plus-suffix relation the DiDok spelling used, and because the
+    alternative -- refusing it -- would break the day the source starts emitting
+    quays again. If a quay id ever comes back and departures go empty for it,
+    this branch is the first place to look.
     """
     if ref.isdigit():
         return f"<StopPlaceRef>{ref}</StopPlaceRef>"
+    sloid = sloid_tail(ref)
+    if sloid is not None:
+        if len(sloid) == 1:
+            return f"<StopPlaceRef>{ref}</StopPlaceRef>"
+        return f"<siri:StopPointRef>{ref}</siri:StopPointRef>"
     if is_stop_ref(ref):
         return f"<siri:StopPointRef>{ref}</siri:StopPointRef>"
     raise ValueError(

@@ -5,6 +5,65 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Die Quelle liefert SLOIDs statt DiDok-Nummern, und die Reiseplanung über
+  Ortsnamen war dadurch tot.** Am 2026-08-10 antwortete
+  `transport_search_stop` für Zürich HB mit `ch:1:sloid:3000`, wo bis dahin
+  `8503000` stand. `ojp_client.is_stop_ref` akzeptierte zwei Formen — reine
+  Ziffern und durch Doppelpunkt getrennte Ziffernblöcke — und `ch` und `sloid`
+  sind keine Ziffern. Das eine `False` erreichte den Benutzer so:
+
+  ```
+  transport_trip_plan(origin="Zürich HB", destination="Basel SBB")
+  → trips=[], message="Error: 'ch:1:sloid:3000' is not a stop id."
+  ```
+
+  **Die Suche empfahl eine Kennung, die die anderen Werkzeuge ablehnten** —
+  exakt der Fall, den der Docstring von `_build_place_ref` als Begründung für
+  seine eigene Existenz nennt. Es war eine dritte Kennungsform, mit der er
+  nicht gerechnet hatte.
+
+  Gemessen statt vermutet, über den Client des Repos selbst: 62 Ergebnisse zu
+  vier Anfragen, jedes davon eine SLOID in einem `StopPlaceRef`, kein einziges
+  `siri:StopPointRef` darunter. **Das Element hat sich nicht geändert, nur der
+  Wert darin** — die Änderung, die ein Struktur-Diff nicht sieht.
+
+  Die DiDok-Nummer kommt gar nicht mehr mit: Neben der SLOID stehen nur ein
+  `PrivateCode` des Systems `EFA` (`108276` für Zürich HB) und ein
+  `TopographicPlaceRef` mit der Gemeinde. Die alten Kennungen weiter
+  auszugeben war deshalb keine Option, die es gab.
+
+  Drei Stellen, drei Konsequenzen:
+
+  * `is_stop_ref` erkennt die SLOID-Form, Präfix `ch:1:sloid:`
+    grossschreibungstolerant, weil die Kennung als blosser String aus einem
+    Modell zurückkommt.
+  * Die Weiche in `_build_place_ref` musste umgeschrieben werden: Sie hiess
+    «Ziffern sind eine Station, Doppelpunkte sind eine Haltekante», und
+    `ch:1:sloid:3000` ist eine **Station voller Doppelpunkte**. Unverändert
+    wäre sie als `siri:StopPointRef` hinausgegangen — die stille Hälfte dieses
+    Fehlers statt der lauten. Die DiDok-Schreibweisen bleiben gültig: Die
+    Quelle gibt sie nicht mehr aus, nimmt sie aber weiterhin an.
+  * Eine SLOID mit weiteren Gruppen (`ch:1:sloid:3000:0:31`) wurde **nie
+    beobachtet** und wird trotzdem als Haltekante geroutet, weil das genau das
+    Verhältnis Station-plus-Zusatz der DiDok-Schreibweise ist. Diese Entscheidung
+    ist als geschlossen und nicht gemessen gekennzeichnet, im Code wie im Test.
+
+- **Zwei Live-Tests haben etwas anderes gemessen, als ihr Name sagt.**
+
+  `test_live_search_stop_bern_id` prüfte `stop_id == "8507000"` und hat damit
+  die Kennung selbst zum Vertrag erklärt. Der Vertrag ist, dass die Suche etwas
+  zurückgibt, das die anderen Werkzeuge annehmen; wie die Quelle ihre Halte
+  durchnummeriert, ist ihre Sache. Geprüft wird jetzt `is_stop_ref` plus der
+  Name — `8507000` hätte beides ebenso bestanden.
+
+  `test_live_quay_id_is_usable_where_the_search_offers_it` erkannte Haltekanten
+  an `":" in stop_id`. Seit jede Kennung Doppelpunkte hat, griff der Filter die
+  Station Zürich HB und prüfte sie als Kante. Der Test war damit nicht bloss
+  rot — er hätte auch grün nichts mehr belegt. Die Kante wird jetzt am Element
+  `siri:StopPointRef` im XML erkannt, und der Skip ist wieder ehrlich.
+
 ### Changed
 
 - **`live-tests.yml` prüft den Schlüssel jetzt zuerst, statt ihn erraten zu

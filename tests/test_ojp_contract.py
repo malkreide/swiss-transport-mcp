@@ -186,6 +186,69 @@ def test_a_quay_id_is_referenced_as_a_quay():
     assert 'xmlns:siri="' in ojp_client.build_stop_event_request("8503000:0:31")
 
 
+def test_a_sloid_station_is_referenceable_and_goes_in_a_stop_place_ref():
+    """Die Form, mit der die Quelle seit dem 10.8.2026 antwortet.
+
+    Gemessen: `transport_search_stop` liefert `ch:1:sloid:3000` fuer Zuerich HB,
+    62 Ergebnisse ueber vier Anfragen, jedes davon eine SLOID in einem
+    `StopPlaceRef` und kein einziges `siri:StopPointRef` darunter. Das Element
+    hat sich also nicht geaendert, nur der Wert darin — die Aenderung, die ein
+    Struktur-Diff nicht sieht.
+
+    Zwei Dinge muessen deshalb hier stehen und nicht nur in der Live-Suite:
+    dass die SLOID ueberhaupt als Kennung durchgeht (sonst weist
+    `transport_trip_plan` die Kennung ab, die `transport_search_stop` gerade
+    ausgegeben hat), und dass sie in einem `StopPlaceRef` landet. Die alte
+    Weiche haette sie wegen der Doppelpunkte zur Haltekante erklaert; das waere
+    die stille Haelfte des Fehlers gewesen statt der lauten.
+    """
+    assert "StopPlaceRef" in choice_refs("PlaceRefGroup")
+
+    for ref in ("ch:1:sloid:3000", "ch:1:sloid:7000", "ch:1:sloid:1103073"):
+        assert ojp_client.is_stop_ref(ref), f"{ref} nicht als Kennung erkannt"
+        assert _build_place_ref(ref) == f"<StopPlaceRef>{ref}</StopPlaceRef>"
+
+    # Aus einem Modell kommt die Kennung als blosser String; Grossschreibung
+    # darf sie nicht in eine Ortssuche nach «CH:1:SLOID:3000» verwandeln.
+    assert ojp_client.is_stop_ref("CH:1:SLOID:3000")
+    assert _build_place_ref("CH:1:SLOID:3000") == "<StopPlaceRef>CH:1:SLOID:3000</StopPlaceRef>"
+
+    # Die DIDOK-Schreibweisen bleiben gueltig: Die Quelle gibt sie nicht mehr
+    # aus, nimmt sie aber weiterhin an — `test_live_departures_zurich` fragt mit
+    # `8503000` und war am 10.8.2026 gruen.
+    assert _build_place_ref("8503000") == "<StopPlaceRef>8503000</StopPlaceRef>"
+    assert _build_place_ref("8503000:0:31").startswith("<siri:StopPointRef>")
+
+
+def test_a_sloid_with_further_groups_is_treated_as_a_quay():
+    """Nicht gemessen, sondern geschlossen — und darum hier benannt.
+
+    Eine SLOID mit weiteren Gruppen (`ch:1:sloid:3000:0:31`) hat diese Quelle
+    noch nie geliefert; am 10.8.2026 kam ueber vier Anfragen keine einzige
+    Haltekante zurueck. Geroutet wird sie trotzdem, und zwar als StopPoint,
+    weil das genau das Verhaeltnis Station-plus-Zusatz ist, das die
+    DIDOK-Schreibweise hatte.
+
+    Dieser Test haelt die Entscheidung fest, damit sie beim naechsten Mal als
+    Entscheidung erkennbar ist und nicht als Messung. Faellt er, weil die Quelle
+    Kanten anders schreibt, ist das die erwuenschte Art zu scheitern.
+    """
+    ref = "ch:1:sloid:3000:0:31"
+    assert ojp_client.is_stop_ref(ref)
+    assert _build_place_ref(ref) == f"<siri:StopPointRef>{ref}</siri:StopPointRef>"
+
+
+def test_a_sloid_shaped_string_that_is_not_one_stays_a_name():
+    """Der Praefix allein macht keine Kennung — sonst wird ein Name referenziert.
+
+    `is_stop_ref` entscheidet, ob der Server einen Namen erst aufloest. Was hier
+    faelschlich `True` ergaebe, ginge als Verweis hinaus und kaeme als leere
+    Liste zurueck: der Ausfall, der wie eine Antwort aussieht.
+    """
+    for ref in ("ch:1:sloid:", "ch:1:sloid:abc", "ch:1:sloid:3000:x", "Zürich HB", "ch:1:x:3000"):
+        assert not ojp_client.is_stop_ref(ref), f"{ref!r} faelschlich als Kennung erkannt"
+
+
 def test_place_ref_builder_refuses_a_name_it_cannot_reference():
     """Ein Name ist in OJP 2.0 kein Verweis — und darf keiner vorgetaeuscht werden.
 
