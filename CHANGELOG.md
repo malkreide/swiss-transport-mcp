@@ -5,6 +5,41 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- **`live-tests.yml` prüft den Schlüssel jetzt zuerst, statt ihn erraten zu
+  lassen.** Ein Lauf von Hand am 2026-08-10 ohne gesetztes `TRANSPORT_API_KEY`
+  endete mit:
+
+  ```
+  Live-Suite: unknown
+  alle 7 Test(s) uebersprungen — meist ein fehlendes Secret oder eine nicht
+  erfuellte Vorbedingung. Geprueft wurde nichts
+  ```
+
+  Das Urteil ist richtig und bleibt es: pytest endet mit `0`, wenn sich jeder
+  Test übersprungen hat, und `classify_live_run.py` liest deshalb das JUnit-XML
+  statt des Exit-Codes. Genau dafür wurde es geschrieben.
+
+  Nur kann der Klassifikator aus dem XML nicht sehen, **welche** Vorbedingung
+  gefehlt hat — ein fehlendes Secret und eine umbenannte Marke sehen dort
+  identisch aus. Also nennt er beide, und der Leser sucht sich die Antwort über
+  Workflow, Testdatei und Klassifikator zusammen.
+
+  Der fehlende Schlüssel ist der eine Fall, den man **vorher** kennen kann. Eine
+  Gate ganz vorne prüft `secrets.TRANSPORT_API_KEY` und nennt ihn beim Namen,
+  bevor Checkout, Installation und Suite überhaupt laufen.
+
+  Sie ersetzt die Einordnung nicht — sie kommt ihr nur in diesem einen Fall
+  zuvor. Timeout, gescheitertes `pip install`, umbenannte Marke: alles fällt
+  weiterhin dort an und wird dort `unknown`.
+
+  Am Issue ändert der früh rote Job nichts, und das ist richtig: `unknown`
+  öffnet und schliesst ebenfalls keines. Ein Lauf ohne Vergleich darf keinen
+  behaupten — in beide Richtungen. Der Workflow läuft ausserdem nur auf
+  `schedule` und `workflow_dispatch`, nie auf `pull_request`; ein Fork ohne
+  Secrets kann an dieser Gate also nicht scheitern.
+
 ### Fixed
 
 - **Der Fix vom 2026-08-07 bestätigte `result` und hörte dort auf.** Das

@@ -68,6 +68,44 @@ jobs:
     name: Live-Suite gegen opentransportdata.swiss
     runs-on: ubuntu-latest
     steps:
+      # Zuerst, vor Checkout und Setup: Ohne Schluessel ueberspringt sich jeder
+      # Test mit `@_needs_key`, pytest endet mit 0, und rot wird der Lauf erst
+      # ganz unten — mit «meist ein fehlendes Secret ODER eine nicht erfuellte
+      # Vorbedingung». Das Urteil stimmt und bleibt richtig; nur weiss der
+      # Klassifikator aus dem XML nicht, WELCHES von beidem es war, und laesst
+      # den Leser deshalb raten. An dieser Stelle ist es bekannt.
+      #
+      # Gemessen am 10.8.2026: ein Lauf von Hand ohne gesetztes Secret, sieben
+      # uebersprungene Tests, `unknown`, und die Frage «welche Vorbedingung»
+      # kostete den Weg ueber Workflow, Testdatei und Klassifikator.
+      #
+      # Das ersetzt die Einordnung NICHT — es kommt ihr nur in dem einen Fall
+      # zuvor, den man vorher kennen kann. Jeder andere Grund fuer einen
+      # uebersprungenen Lauf (Timeout, gescheitertes pip install, umbenannte
+      # Marke) faellt weiterhin dort an und wird dort `unknown`.
+      #
+      # Am Issue aendert der frueh rote Job nichts, und das ist richtig so:
+      # `unknown` oeffnet und schliesst ebenfalls keines. Ein Lauf ohne
+      # Vergleich darf keinen behaupten — in beide Richtungen.
+      #
+      # Dieser Workflow laeuft nur auf `schedule` und `workflow_dispatch`, nie
+      # auf `pull_request`. Ein Fork ohne Secrets kann hier also nicht rot
+      # werden; die Gate trifft nur Laeufe, die den Schluessel haben sollten.
+      - name: Schluessel vorhanden?
+        env:
+          KEY: ${{ secrets.TRANSPORT_API_KEY }}
+        run: |
+          if [ -z "${KEY}" ]; then
+            echo "::error::Secret TRANSPORT_API_KEY fehlt. Noetig ist ein" \
+                 "kostenloser Schluessel von api-manager.opentransportdata.swiss" \
+                 "mit mindestens einem Abo auf OJP 2.0 — das ist, was die" \
+                 "Live-Suite anfaesst. Ohne ihn ueberspringt sich jeder Test," \
+                 "pytest endet mit 0, und der Lauf stellt ueber den Vertrag mit" \
+                 "der Quelle nichts fest. Kein Issue wird geoeffnet und keines" \
+                 "geschlossen: ein Lauf ohne Vergleich darf keinen behaupten."
+            exit 1
+          fi
+
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7
