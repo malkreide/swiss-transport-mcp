@@ -12,6 +12,7 @@ swallowed by a print().
 """
 
 import os
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -36,11 +37,25 @@ async def test_live_search_stop_zurich():
 
 @_needs_key
 async def test_live_search_stop_bern_id():
+    """Der Treffer muss referenzierbar sein — nicht eine bestimmte Nummer tragen.
+
+    Stand hier `== "8507000"`. Am 10.8.2026 antwortete die Quelle mit
+    `ch:1:sloid:7000`, und der Test fiel — zu Recht, aber aus dem falschen
+    Grund: Er hat die Kennung selbst zum Vertrag erklaert. Der Vertrag ist,
+    dass die Suche etwas zurueckgibt, das die anderen Werkzeuge annehmen. Wie
+    die Quelle ihre Halte durchnummeriert, ist ihre Sache.
+
+    Das ist die Lehre aus dem Fehlschlag und nicht sein Zudecken: `is_stop_ref`
+    haette `8507000` genauso bestanden, und die Zeile darunter faengt weiterhin
+    den Fall ab, dass die Suche nach «Bern» irgendwo anders landet.
+    """
     xml = ojp_client.build_location_request("Bern", limit=3)
     response = await api_client.ojp_request(xml)
     locations = ojp_client.parse_location_response(response)
     assert locations
-    assert locations[0].get("stop_id") == "8507000"
+    stop_id = locations[0].get("stop_id", "")
+    assert ojp_client.is_stop_ref(stop_id), f"{stop_id!r} ist keine referenzierbare Kennung"
+    assert "Bern" in locations[0].get("name", "")
     assert "rail" in locations[0].get("transport_modes", [])
 
 
@@ -107,13 +122,32 @@ async def test_live_quay_id_is_usable_where_the_search_offers_it():
     Eine Haltekante kommt als `siri:StopPointRef` (`8503000:0:31`) zurueck. Kann
     die Abfahrtstafel so eine Kennung nicht verwerten, empfiehlt die Suche
     Werte, die nirgends funktionieren.
+
+    **Die Kante wird am Element erkannt, nicht am Doppelpunkt.** Vorher stand
+    hier `":" in stop_id` — richtig, solange Stationen `8503000` hiessen und
+    Kanten `8503000:0:31`. Seit die Quelle SLOIDs liefert, hat *jede* Kennung
+    Doppelpunkte, und der Filter griff sich die Station Zuerich HB und pruefte
+    sie als Kante. Der Test war damit nicht bloss rot: Er hat etwas anderes
+    gemessen, als sein Name sagt, und haette auch gruen nichts mehr belegt.
+
+    Am 10.8.2026 lieferte die Quelle zu vier Anfragen 62 Ergebnisse und darunter
+    keine einzige Kante. Der Skip ist also der erwartete Ausgang — und er ist
+    jetzt ehrlich: uebersprungen wird, wenn wirklich keine da ist.
     """
-    xml = ojp_client.build_location_request("Zürich HB", limit=10)
-    locations = ojp_client.parse_location_response(await api_client.ojp_request(xml))
-    quays = [loc for loc in locations if ":" in str(loc.get("stop_id", ""))]
-    if not quays:
+    xml = ojp_client.build_location_request("Zürich HB", limit=20)
+    raw = await api_client.ojp_request(xml)
+
+    # Direkt am XML, weil `stop_id` die Herkunft nicht mehr verraet: Der Parser
+    # legt StopPlaceRef und siri:StopPointRef in dasselbe Feld.
+    root = ET.fromstring(raw)
+    quay_refs = [
+        (el.text or "").strip()
+        for el in root.iter("{http://www.siri.org.uk/siri}StopPointRef")
+        if (el.text or "").strip()
+    ]
+    if not quay_refs:
         pytest.skip("Quelle liefert zu dieser Anfrage keine Haltekanten")
 
-    stop_id = quays[0]["stop_id"]
+    stop_id = quay_refs[0]
     assert ojp_client.is_stop_ref(stop_id), f"{stop_id} nicht als Kennung erkannt"
     assert "<siri:StopPointRef>" in ojp_client.build_stop_event_request(stop_id, limit=3)
