@@ -64,7 +64,9 @@ hat keinen eigenen Pin-Schritt — `pip install -e ".[dev]"` genügt, lokal wie
 dort. Eine `.pre-commit-config.yaml` gibt es nicht; wenn eine dazukommt, muss
 sie dieselbe Version aus `pyproject.toml` beziehen und keine zweite nennen.
 
-**Gates, wörtlich aus `ci.yml`** (Matrix: Python 3.11 / 3.12 / 3.13):
+**Gates, wörtlich aus `ci.yml`** (Matrix: Python 3.11 / 3.12 / 3.13 — alle
+Gates auf allen drei Feldern, keine `if:`-Ausnahme, kein zweiter lint-Job;
+ein `fail-fast: false` steht nicht da):
 
 ```
 pip install -e ".[dev]"
