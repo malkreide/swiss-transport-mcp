@@ -67,7 +67,9 @@ sie dieselbe Version aus `pyproject.toml` beziehen und keine zweite nennen.
 Vor dem Lauf `ruff --version` prüfen: ein älteres ruff früher im `PATH`
 schlägt den Pin, ohne dass der Install etwas meldet.
 
-**Gates, wörtlich aus `ci.yml`** (Matrix: Python 3.11 / 3.12 / 3.13):
+**Gates, wörtlich aus `ci.yml`** (Matrix: Python 3.11 / 3.12 / 3.13 — alle
+Gates auf allen drei Feldern, keine `if:`-Ausnahme, kein zweiter lint-Job;
+ein `fail-fast: false` steht nicht da):
 
 ```
 pip install -e ".[dev]"
