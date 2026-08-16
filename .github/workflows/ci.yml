@@ -21,6 +21,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # ruff kommt exakt gepinnt aus dem `dev`-Extra in pyproject.toml. Kein
+      # zweiter Pin-Schritt hier: Zwei Stellen fuer dieselbe Version driften
+      # auseinander, und die CI merkt es nicht, weil sie sich selbst
+      # ueberschreibt — lokal laeuft dann ein anderes Gate als hier.
       - name: Install dependencies
         run: |
           pip install -e ".[dev]"
@@ -28,11 +32,6 @@ jobs:
       - name: Run tests
         run: |
           PYTHONPATH=src pytest tests/ -m "not live"
-
-      # Pin ruff so an upstream release cannot change the default rule set or
-      # formatter and break CI on unrelated, untouched code.
-      - name: Install pinned ruff
-        run: pip install ruff==0.16.1
 
       - name: Lint
         run: ruff check src/ tests/ scripts/
