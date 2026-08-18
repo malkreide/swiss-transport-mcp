@@ -66,6 +66,8 @@ sie dieselbe Version aus `pyproject.toml` beziehen und keine zweite nennen.
 
 Vor dem Lauf `ruff --version` prüfen: ein älteres ruff früher im `PATH`
 schlägt den Pin, ohne dass der Install etwas meldet.
+In der CI erledigt das `scripts/check_ruff_pin.py` (PATH *und* Modul gegen
+`pyproject.toml`) — es ist selbst eines der Gates unten, kein zweiter Pin.
 
 **Gates, wörtlich aus `ci.yml`** (Matrix: Python 3.11 / 3.12 / 3.13 — alle
 Gates auf allen drei Feldern, keine `if:`-Ausnahme, kein zweiter lint-Job;
@@ -80,8 +82,15 @@ ruff format --check src/ tests/ scripts/
 python scripts/check_version_sync.py
 ```
 
+`ci.yml` löst nur auf `push`/`pull_request` gegen `main` aus. Ein PR mit einem
+anderen Base-Branch bekommt gar keine Checks — neben dem Merge-Konflikt aus
+Teil 1 die zweite Ursache für einen PR ohne jeden Lauf.
+
 **Live-Tests: geplanter Workflow vorhanden.** `.github/workflows/live-tests.yml`,
 `cron: "19 5 * * 1"` (wöchentlich Mo, 05:19 UTC) plus `workflow_dispatch`. Die
 Live-Suite ist also nicht bloss per `-m "not live"` ausgeschlossen — DRIFT-005
 ist hier erfüllt. `schedule` greift nur auf dem Default-Branch: Änderungen am
-Workflow wirken erst nach dem Merge, vorher von Hand per `workflow_dispatch`.
+Workflow wirken erst nach dem Merge, vorher von Hand per `workflow_dispatch`. Ohne das Secret
+`TRANSPORT_API_KEY` bricht der Job in seinem ersten Schritt ab, statt sich
+still grün zu überspringen.
+
