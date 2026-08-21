@@ -26,6 +26,20 @@ from swiss_transport_mcp.api_infrastructure import (
 CKAN_URL = "https://api.opentransportdata.swiss/ckan-api/package_list"
 OJP_URL = "https://api.opentransportdata.swiss/ojp20"
 
+# Wanduhr-Zahlen fuer den Deadline-Test weiter unten, weit genug auseinander,
+# dass Scheduler-Jitter das Ergebnis nicht mehr kippen kann. Gemessen auf 3.11
+# ueber 15 Laeufe des Test-Rumpfs selbst, durch pytest, damit jede Fixture
+# steht: 0.122-0.141s gegen ein Budget von 0.05s. Rund 0.077s davon waren
+# Aufbau — mehr als das Budget — der Test mass also ueberwiegend Aufbau und
+# nicht Deadline. Die alte Schranke von 0.5s liess 0.373s absoluten Spielraum,
+# und CI-Jitter ist absolut, nicht proportional: In swiss-efv-mcp machte ein
+# belasteter Runner am 21.08.2026 aus 0.105s ganze 0.55s und riss dieselbe
+# Zusicherung. Ein groesseres Budget verkuerzt diesen Stillstand nicht, es
+# macht ihn klein *gegenueber* dem, was gemessen wird.
+_BUDGET = 0.5
+_CUT_BY = 2.5
+_SLOW_RESPONSE = 8.0
+
 
 @pytest.fixture(autouse=True)
 def _api_keys(monkeypatch):
@@ -236,19 +250,40 @@ async def test_a_slow_response_is_cut_by_the_wall_clock_deadline(monkeypatch, re
     Bewusst mit der *echten* ``asyncio.sleep``: Eine Zusicherung über echte Zeit
     kann eine Uhr, die nur beim Schlafen vorrückt, nicht widerlegen — genau
     dieser blinde Fleck liess den Fehler in den Geschwister-Servern durch.
+
+    Die Spannen sind absichtlich weit — die Messung dahinter steht bei
+    ``_BUDGET`` oben. Der einmalige Prozessstart faellt vor der Uhr an. Den
+    Client baut ``ckan_request`` selbst, er laesst sich also nicht aus dem
+    Fenster nehmen: Gemessen werden 0.575s gegen ein Budget von 0.5s, die
+    restlichen rund 0.075s sind dieser Bau. Das sind noch 13% des Fensters
+    statt 60% wie vorher.
     """
-    monkeypatch.setattr(retry, "TOTAL_BUDGET", 0.05)
+    # Aufwaermen auf dem unangetasteten Standardbudget, bevor es unten verengt
+    # wird: zahlt den einmaligen Prozessstart ausserhalb des gemessenen
+    # Fensters. ``ckan_request`` cacht nichts, der gemessene Aufruf geht also
+    # weiterhin wirklich hinaus.
+    route = respx.get(CKAN_URL).mock(return_value=_ok_ckan())
+    await api_client.ckan_request("package_list")
+
+    monkeypatch.setattr(retry, "TOTAL_BUDGET", _BUDGET)
 
     async def _slow(request):
-        await real_sleep(1.0)
+        await real_sleep(_SLOW_RESPONSE)
         return _ok_ckan()
 
-    respx.get(CKAN_URL).mock(side_effect=_slow)
+    route.mock(side_effect=_slow)
     started = time.monotonic()
     with pytest.raises(TimeoutError):
         await api_client.ckan_request("package_list")
     elapsed = time.monotonic() - started
-    assert elapsed < 0.5, f"Deadline hat nicht geschnitten: {elapsed:.2f}s"
+
+    # Absichtlich zweiseitig. Die obere Schranke ist die Zusicherung: Eine
+    # Antwort, die _SLOW_RESPONSE gebraucht haette, wurde geschnitten. Die
+    # untere sagt, dass der Schnitt vom Budget kam und nicht davon, dass etwas
+    # sofort scheiterte — eine falsch gerechnete Deadline segelt durch eine
+    # obere Schranke allein hindurch.
+    assert elapsed >= _BUDGET / 2, f"zu frueh geschnitten fuer das Budget: {elapsed:.3f}s"
+    assert elapsed < _CUT_BY, f"Deadline hat nicht geschnitten: {elapsed:.2f}s"
 
 
 # --- Anbindung an TransportAPIClient ----------------------------------------
