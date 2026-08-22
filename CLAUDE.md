@@ -138,7 +138,7 @@ wie der Code: Nichts ist rot, weil nichts geprüft wird, worauf es ankommt.
 
 ## Teil 2 — Dieses Repo
 
-**ruff: eine Quelle.** `pyproject.toml`, `dev`-Extra, `ruff==0.16.1`. Die CI
+**ruff: eine Quelle.** `pyproject.toml`, `dev`-Extra, `ruff==0.16.3`. Die CI
 hat keinen eigenen Pin-Schritt — `pip install -e ".[dev]"` genügt, lokal wie
 dort. Eine `.pre-commit-config.yaml` gibt es nicht; wenn eine dazukommt, muss
 sie dieselbe Version aus `pyproject.toml` beziehen und keine zweite nennen.
