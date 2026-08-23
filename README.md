@@ -362,6 +362,35 @@ accepted-risk decisions (gateway-level controls).
 
 ---
 
+## MCP Protocol Version
+
+This server speaks **two protocol eras** over the same endpoint. The client's
+first request on a connection decides which one applies; a later claim from the
+other era is refused.
+
+| Era | Revision | Who reaches it |
+|---|---|---|
+| `initialize` handshake | `2024-11-05` … **`2025-11-25`** | What today's clients speak. The server answers with the revision asked for, or with the `2025-11-25` ceiling when the request asks for something newer. |
+| Per-request envelope | **`2026-07-28`** | A request carrying the `2026-07-28` `_meta` envelope opens a modern connection. |
+
+Both revisions are pinned in
+[`tests/test_protocol_version.py`](tests/test_protocol_version.py) and asserted
+against the installed SDK, so a Dependabot bump of `mcp` cannot move either one
+silently. This server builds no ASGI app to send an `initialize` through, so
+the gate asserts the SDK constants rather than a measured response — the
+weaker form, named rather than left unsaid.
+
+Note that the SDK's `LATEST_PROTOCOL_VERSION` is an alias for the **modern**
+era, not for the handshake era — pinning against it alone would leave the era
+that current clients actually negotiate free to drift.
+
+**Update policy.** When the gate fails, do not edit the constant blindly: read
+the spec changelog between the two revisions, verify the server still behaves,
+then move the constant, this section, `README.de.md` and
+[`CHANGELOG.md`](CHANGELOG.md) together.
+
+---
+
 ## Testing
 
 ```bash
