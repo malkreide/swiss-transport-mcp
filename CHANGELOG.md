@@ -5,6 +5,22 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`allow_headers` stand auf `["*"]`.** Starlette schaltet damit auf
+  `allow_all_headers` und spiegelt im Preflight zurück, was der Browser
+  ankündigt — jeder erlaubte Origin durfte jeden beliebigen Header senden. Die
+  Liste nennt jetzt `Content-Type`, die drei Routing-Header der Spec
+  `2026-07-28`, `Mcp-Session-Id` und `Last-Event-ID`. Letzterer setzt einen
+  abgerissenen SSE-Strom fort und war unter der Wildcard nie geprüft: eine
+  Wildcard kann nicht falsch werden und sagt deshalb nichts darüber, ob die
+  Header, die das Protokoll braucht, freigegeben sind.
+
+  `Authorization` steht bewusst nicht auf der Liste. Die `Authorization`-Header
+  in diesem Code sind ausgehend — der Server authentifiziert sich gegenüber der
+  Upstream-API — und der MCP-Endpunkt selbst hat kein Gate. Einen Header zu
+  nennen, den der Server nie liest, wäre dieselbe Raterei wie die Wildcard.
+
 ### Hinzugefuegt
 
 - **Frischehinweise auf den auflistenden Methoden** (SEP-2549, Spec
