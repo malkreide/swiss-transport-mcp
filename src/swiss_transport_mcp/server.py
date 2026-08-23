@@ -1417,6 +1417,37 @@ def _build_transport_security(
     )
 
 
+# The headers spec 2026-07-28 routes a request by, in the SDK's own spelling
+# (`mcp.shared.inbound`): the JSON-RPC method, the tool/prompt/resource the
+# call names, and the protocol revision it is written against.
+CORS_ROUTING_HEADERS = ["Mcp-Method", "Mcp-Name", "Mcp-Protocol-Version"]
+
+# This was `["*"]`. Starlette switches to `allow_all_headers` on a wildcard and
+# mirrors back whatever a browser announces, so every permitted origin could
+# send any header at all — that is not an allow-list, it is the absence of one.
+#
+# It also hides every drift, because a wildcard cannot become wrong: drop a
+# header the protocol needs and nothing turns red.
+#
+# `Last-Event-ID` is how a client resumes a dropped SSE stream
+# (`LAST_EVENT_ID_HEADER` in `mcp.server.streamable_http`). Omitting it breaks
+# only reconnection after packet loss — the worst way to find a bug.
+#
+# `Mcp-Param-*` is deliberately absent: CORS has no prefix wildcard, and no
+# tool here annotates an input field with `x-mcp-header`, so no such header is
+# ever sent. `test_no_tool_declares_an_mcp_param_header` fails the day one does.
+# `Authorization` is deliberately absent. The `Authorization` headers in this
+# code base are outbound — the server authenticating to the upstream API — and
+# nothing gates the MCP endpoint itself. Listing a header the server never
+# reads would be the same guesswork the wildcard was.
+CORS_ALLOW_HEADERS = [
+    "Content-Type",
+    *CORS_ROUTING_HEADERS,
+    "Mcp-Session-Id",
+    "Last-Event-ID",
+]
+
+
 def _build_http_app(
     transport: str,
     origins: list[str],
@@ -1463,7 +1494,7 @@ def _build_http_app(
         allow_origins=origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
+        allow_headers=CORS_ALLOW_HEADERS,
         expose_headers=["Mcp-Session-Id"],
     )
     return app
