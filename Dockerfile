@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: builder – install the package into an isolated virtualenv
 # ---------------------------------------------------------------------------
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -24,7 +24,7 @@ RUN pip install --upgrade pip && pip install .
 # ---------------------------------------------------------------------------
 # Stage 2: runtime – minimal, non-root, only the venv + source
 # ---------------------------------------------------------------------------
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 # SEC-007: run as an unprivileged user with a minimal image surface.
 RUN useradd --create-home --uid 10001 appuser
