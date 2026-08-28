@@ -247,7 +247,15 @@ jobs:
       # Unterschied steht im Log, nicht im Exit-Code.
       - name: Ergebnis durchreichen
         if: steps.verdict.outputs.state != 'clear'
+        # Ueber `env`, nicht ueber `${{ }}`: Der Grund kann eine Parser-Meldung
+        # ueber eine fremde Datei enthalten, und `${{ }}` setzt ihn vor dem Start
+        # woertlich in die Shell ein — ein `$(...)` oder ein Anfuehrungszeichen
+        # darin liefe mit. Der github-script-Schritt macht es aus demselben Grund
+        # schon so.
+        env:
+          LIVE_STATE: ${{ steps.verdict.outputs.state }}
+          LIVE_REASON: ${{ steps.verdict.outputs.reason }}
         run: |
-          echo "Live-Suite: ${{ steps.verdict.outputs.state }}"
-          echo "${{ steps.verdict.outputs.reason }}"
+          echo "Live-Suite: $LIVE_STATE"
+          echo "$LIVE_REASON"
           exit 1
