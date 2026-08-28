@@ -137,5 +137,30 @@ class GithubOutputTest(unittest.TestCase):
         self.assertIn("reason=", written)
 
 
+class GithubOutputZeilenTest(unittest.TestCase):
+    """Ein Grund mit Zeilenumbruch darf kein zweites Output nachschieben.
+
+    `key=value` endet in `$GITHUB_OUTPUT` an der ersten neuen Zeile; was
+    danach steht, liest der Runner als eigenen Output. Der Reportpfad kommt
+    vom Aufrufer und steht woertlich im Grund — ein Umbruch darin schoebe
+    sonst ein `state=clear` nach und faerbte den roten Lauf gruen.
+    """
+
+    def test_umbruch_im_grund_schiebt_kein_zweites_output_nach(self):
+        import os
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "gh-output"
+            out.write_text("", encoding="utf-8")
+            os.environ["GITHUB_OUTPUT"] = str(out)
+            try:
+                clr.main([str(Path(tmp) / "live-report.xml") + "\nstate=clear"])
+            finally:
+                del os.environ["GITHUB_OUTPUT"]
+            zeilen = [z for z in out.read_text(encoding="utf-8").splitlines() if z]
+        self.assertEqual([z for z in zeilen if z.startswith("state=")], ["state=unknown"])
+        self.assertEqual(len(zeilen), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
