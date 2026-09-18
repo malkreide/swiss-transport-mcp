@@ -86,13 +86,6 @@ async def test_live_trip_zurich_bern_by_id():
     assert "duration" in trips[0]
 
 
-class _Ctx:
-    """Gerade so viel Context, wie `transport_trip_plan` benutzt."""
-
-    async def info(self, *_args, **_kwargs) -> None:
-        return None
-
-
 @_needs_key
 async def test_live_trip_by_name():
     """Ortsnamen gehen jetzt durch die Aufloesung, nicht durch den Rumpfbauer.
@@ -109,7 +102,7 @@ async def test_live_trip_by_name():
     Geprueft wird deshalb der Weg, den das Werkzeug wirklich geht.
     """
     result = await server.transport_trip_plan(
-        server.TripPlanInput(origin="Zürich HB", destination="Basel SBB", limit=2), _Ctx()
+        server.TripPlanInput(origin="Zürich HB", destination="Basel SBB", limit=2)
     )
     assert result.trips, f"keine Reise gefunden: {result.message}"
     assert result.trips[0].get("legs")

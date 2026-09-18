@@ -308,9 +308,28 @@ aus der jeweils anderen Aera wird abgewiesen.
 Beide Revisionen sind in
 [`tests/test_protocol_version.py`](tests/test_protocol_version.py) gepinnt und
 werden gegen das installierte SDK geprueft; ein Dependabot-Bump von `mcp` kann
-also keine der beiden still verschieben. Dieser Server baut keine ASGI-App, durch die sich ein `initialize`
-schicken liesse; das Gate sichert deshalb die SDK-Konstanten statt einer
-gemessenen Antwort — die schwaechere Form, benannt statt verschwiegen.
+also keine der beiden still verschieben. Dieser Pin sagt, welche Revisionen das
+SDK *anbietet*.
+
+Dass der Server sie auch bedient, ist in
+[`tests/test_modern_wire.py`](tests/test_modern_wire.py) **gemessen**, und zwar
+an genau der App, die `main()` unter uvicorn stellt: echte
+`2026-07-28`-Einzelaustausch-POSTs — ohne `initialize`, ohne `Mcp-Session-Id` —
+fuer `server/discover`, `tools/list` und einen `tools/call`, dazu die drei
+Absage-Sprossen (fehlender Umschlag, Wegweiser-Kopfzeile im Widerspruch zum
+Rumpf, nicht bediente Revision) und ein Legacy-`initialize` am selben Endpunkt
+als Beleg, dass beide Aeren nebeneinander laufen.
+
+In einer frueheren Fassung stand hier, dieser Server baue keine ASGI-App, durch
+die sich eine Anfrage schicken liesse — als Begruendung dafuer, dass das Gate
+nur Konstanten sichern koenne. Er baut eine.
+
+**Wer antwortet da.** `2026-07-28` kennt kein `initialize` und damit keinen
+einmaligen Ort, an dem ein Client `serverInfo` liest. Die Revision legt die
+`Implementation` (Name, Titel, Version, Website) stattdessen in
+`server/discover` **und** in das `_meta` jeder Antwort. Dieser Server fuellt
+sie aus den eigenen Distributions-Metadaten: Die Version auf dem Draht ist die
+installierte und kann nicht von `pyproject.toml` abdriften.
 
 Zu beachten: `LATEST_PROTOCOL_VERSION` im SDK ist ein Alias auf die **moderne**
 Aera, nicht auf die Handshake-Aera — wer nur dagegen pinnt, laesst genau die

@@ -118,13 +118,6 @@ async def test_a_name_leaves_the_process_as_a_reference_not_as_text(monkeypatch)
     assert sent and "<Name>Bern</Name>" in sent[0]
 
 
-class _Ctx:
-    """Gerade so viel Context, wie die Werkzeuge benutzen."""
-
-    async def info(self, *_args, **_kwargs) -> None:
-        return None
-
-
 @respx.mock
 async def test_the_trip_tool_actually_resolves_before_it_asks(monkeypatch):
     """Die Zusicherung am Werkzeug, nicht am Hilfsmittel.
@@ -145,9 +138,7 @@ async def test_the_trip_tool_actually_resolves_before_it_asks(monkeypatch):
 
     respx.post(OJP_V2_URL).mock(side_effect=_capture)
 
-    await server.transport_trip_plan(
-        server.TripPlanInput(origin="Zürich HB", destination="Bern"), _Ctx()
-    )
+    await server.transport_trip_plan(server.TripPlanInput(origin="Zürich HB", destination="Bern"))
 
     trip_bodies = [b for b in sent if "OJPTripRequest" in b]
     assert trip_bodies, "keine Reiseanfrage abgesetzt"
@@ -162,7 +153,7 @@ async def test_an_unresolvable_origin_is_reported_as_such(monkeypatch):
     respx.post(OJP_V2_URL).mock(return_value=httpx.Response(200, text=EMPTY))
 
     result = await server.transport_trip_plan(
-        server.TripPlanInput(origin="Nirgendwo", destination="Bern"), _Ctx()
+        server.TripPlanInput(origin="Nirgendwo", destination="Bern")
     )
 
     assert result.message and "Nirgendwo" in result.message
