@@ -376,9 +376,26 @@ other era is refused.
 Both revisions are pinned in
 [`tests/test_protocol_version.py`](tests/test_protocol_version.py) and asserted
 against the installed SDK, so a Dependabot bump of `mcp` cannot move either one
-silently. This server builds no ASGI app to send an `initialize` through, so
-the gate asserts the SDK constants rather than a measured response — the
-weaker form, named rather than left unsaid.
+silently. That pin says which revisions the SDK *offers*.
+
+That the server actually serves them is **measured** in
+[`tests/test_modern_wire.py`](tests/test_modern_wire.py), against the very app
+`main()` hands to uvicorn: real `2026-07-28` single-exchange POSTs — no
+`initialize`, no `Mcp-Session-Id` — for `server/discover`, `tools/list` and a
+`tools/call`, the three rejection rungs (missing envelope, routing header
+disagreeing with the body, unserved revision), and a legacy `initialize` on the
+same endpoint to show both eras coexist.
+
+An earlier version of this section claimed the repo built no ASGI app to send a
+request through, and offered that as the reason the gate could only assert
+constants. It did build one.
+
+**Server identity.** `2026-07-28` has no `initialize`, and so no single place
+where a client reads `serverInfo`. The revision puts the `Implementation`
+(name, title, version, website) into `server/discover` *and* into the `_meta`
+of every result instead. This server fills those from its own distribution
+metadata, so the version on the wire is the version that was installed — it
+cannot drift from `pyproject.toml`.
 
 Note that the SDK's `LATEST_PROTOCOL_VERSION` is an alias for the **modern**
 era, not for the handshake era — pinning against it alone would leave the era

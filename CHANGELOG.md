@@ -7,6 +7,86 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Der Server nannte sich auf dem Draht ohne Version.** Gemessen an der
+  eigenen ASGI-App: ein `tools/list` ueber die Revision `2026-07-28` kam
+  zurueck mit
+
+  ```json
+  "io.modelcontextprotocol/serverInfo": {"name": "swiss_transport_mcp", "version": ""}
+  ```
+
+  `MCPServer` nimmt die Version als Konstruktor-Argument, das auf `""`
+  defaultet und beim Weglassen nichts meldet. `__version__` gab es laengst —
+  es ging bisher nur in den ausgehenden User-Agent, nie ins Protokoll.
+
+  Bei `2026-07-28` ist der leere Wert teurer als bei den aelteren Revisionen:
+  Die Aera kennt keinen `initialize`-Handshake und damit keinen einmaligen Ort
+  fuer `serverInfo`; die `Implementation` reist stattdessen im `_meta` **jeder**
+  Antwort mit. Der leere String stand also nicht einmal pro Verbindung, sondern
+  in jeder Antwort dieses Servers — und ebenso in der Handshake-Aera, wo
+  `initialize` dasselbe leere Feld zurueckgab. Es war damit nie ein
+  2026-Problem allein, nur eines, das die moderne Aera bei jeder Antwort
+  wiederholt statt einmal pro Verbindung.
+
+  Rot wurde dabei nichts: `test_cache_hints.py` liest genau diese Antworten und
+  sieht `_meta` nicht an.
+
+  Neben `version` tragen jetzt auch `title` und `website_url` die Felder, die
+  `Implementation` bei `2026-07-28` vorsieht. Beide Werte kommen aus den
+  Distributions-Metadaten (neu `__homepage__`), nicht aus Literalen in `src/` —
+  dieselbe Regel, die `scripts/check_version_sync.py` fuer die Versionsnummer
+  erzwingt, gilt fuer eine handkopierte URL genauso. Ohne Installation (blosser
+  Checkout) ist `__homepage__` `None` und das Feld faellt weg, statt eine
+  geratene URL zu melden.
+
+### Changed
+
+- **Zwei Werkzeuge meldeten ihren Fortschritt ueber eine abgekuendigte
+  Faehigkeit.** `transport_departures` und `transport_trip_plan` schrieben
+  `await ctx.info(...)`. SEP-2577 kuendigt die Logging-Faehigkeit mit
+  `2026-07-28` ab, und die Revision macht die Zustellung zu einem Opt-in **pro
+  Anfrage**: ohne den reservierten `_meta`-Schluessel
+  `io.modelcontextprotocol/logLevel` liefert `allowed_log_levels` eine leere
+  Menge, und `send_log_message` verwirft den Eintrag. Eine Fortschrittsmeldung,
+  die nur ankommt, wenn der Aufrufer vorher Logs bestellt hat, ist kein
+  Betriebslog — sie steht jetzt im stderr-Logger des Servers (OBS-003/004, mit
+  `LOG_FORMAT=json` strukturiert).
+
+  Beide Werkzeuge haben damit ihren `ctx: Context`-Parameter verloren. Er stand
+  nie im veroeffentlichten Input-Schema — das SDK filtert ihn heraus —, die
+  SEC-022-Fingerabdruecke sind deshalb unveraendert und `tool_manifest.json`
+  brauchte keine Neuberechnung; `test_tool_integrity.py` haelt das fest, statt
+  es zu glauben. Mit dem Parameter fielen auch die beiden handgeschriebenen
+  `_Ctx`-Stubs aus den Tests weg, die genau eine Methode kannten, weil genau
+  eine benutzt wurde.
+
+### Hinzugefuegt
+
+- **Die Revision `2026-07-28` wird jetzt gemessen, nicht behauptet**
+  (`tests/test_modern_wire.py`, 20 Faelle). Gefahren wird gegen
+  `_build_http_app` — die App, die `main()` unter uvicorn stellt —, mit echten
+  Einzelaustausch-POSTs ohne `initialize` und ohne `Mcp-Session-Id`:
+  `server/discover` (`supportedVersions`), `tools/list` (`resultType`,
+  Werkzeugsatz gegen das gepinnte Manifest, `ttlMs`/`cacheScope` ueber den
+  Transport statt nur im Prozess), ein `tools/call` mit `Mcp-Name`-Wegweiser,
+  die drei Absage-Sprossen der Ladder (fehlender Umschlag → `-32602`,
+  Wegweiser-Kopfzeile im Widerspruch zum Rumpf → `-32020`, nicht bediente
+  Revision → `-32022` samt Liste der bedienten) und die Grenze zwischen den
+  Aeren: ein `initialize`, das `2026-07-28` verlangt, bekommt die Decke der
+  alten Aera, und ein moderner Umschlag mit `2025-11-25` faellt auf den
+  Legacy-Pfad.
+
+  `tests/test_protocol_version.py` nannte seinen Konstanten-Pin bisher selbst
+  die schwaechere Form und begruendete das damit, dieses Repo baue keine
+  ASGI-App, durch die sich eine Anfrage schicken liesse. **Das stimmte nicht** —
+  `_build_http_app` baut sie, und `tests/test_cors.py` fuhr schon damals einen
+  `TestClient` dagegen. Die Begruendung war keine Messgrenze, sondern eine
+  ungepruefte Annahme ueber das eigene Repo; beide READMEs und der Docstring
+  sagen das jetzt so. Der Konstanten-Pin bleibt daneben stehen: er sichert, was
+  das SDK *anbietet*, die Messung, was der Server davon *bedient*.
+
+### Fixed
+
 - **`allow_headers` stand auf `["*"]`.** Starlette schaltet damit auf
   `allow_all_headers` und spiegelt im Preflight zurück, was der Browser
   ankündigt — jeder erlaubte Origin durfte jeden beliebigen Header senden. Die

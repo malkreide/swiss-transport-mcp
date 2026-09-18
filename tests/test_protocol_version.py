@@ -28,10 +28,20 @@ Nachgemessen statt aus Konstantennamen geschlossen: die Aushandlung steht in
 
 — sie haengt an keinem Transport, gilt also fuer stdio ebenso wie fuer HTTP.
 
-Ohne gemessenen Teil: dieses Repo baut keine ASGI-App, durch die sich ein
-`initialize` schicken liesse. Die Zusicherungen unten haengen deshalb an den
-SDK-Konstanten. Das ist die schwaechere Form, und sie steht hier benannt statt
-unausgesprochen.
+Die Zusicherungen unten haengen an den SDK-Konstanten und sagen damit, welche
+Revisionen das installierte SDK *anbietet*. Dass der Server sie auch
+tatsaechlich bedient, misst `tests/test_modern_wire.py` an der App, die
+`main()` unter uvicorn stellt — beides zusammen, nicht eines statt des anderen:
+ein Konstanten-Pin ohne Messung uebersieht einen Server, der die Revision nicht
+spricht, eine Messung ohne Pin uebersieht, dass sie sich unter der Hand
+verschoben hat.
+
+Hier stand zwei Fassungen lang, dieses Repo baue keine ASGI-App, durch die sich
+ein `initialize` schicken liesse, und der Konstanten-Pin sei deshalb die
+einzige moegliche Form. Das war falsch: `server._build_http_app` baut sie,
+`tests/test_cors.py` fuhr schon damals einen `TestClient` dagegen. Eine
+benannte Schwaeche ist besser als eine verschwiegene — aber eine benannte
+Schwaeche, die keine ist, haelt genau so lange von der Messung ab.
 """
 
 from __future__ import annotations

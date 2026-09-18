@@ -30,13 +30,13 @@ from typing import Any
 import anyio
 import httpx
 from mcp.server.caching import CacheableMethod, CacheHint
-from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
 
-from . import __version__, api_client, ojp_client
+from . import __homepage__, __version__, api_client, ojp_client
 from .api_infrastructure import TransportAPIClient, create_transport_client
 from .formation import get_formation_health, get_train_formation
 from .logging_config import configure_logging
@@ -158,8 +158,28 @@ CACHE_HINTS: dict[CacheableMethod, CacheHint] = {
     "server/discover": CacheHint(ttl_ms=LIST_CACHE_TTL_MS, scope="public"),
 }
 
+# Spec 2026-07-28 drops the `initialize` handshake, and with it the one place a
+# client used to read `serverInfo`. In its stead the revision puts an
+# `Implementation` into `server/discover` AND into the `_meta` of every single
+# result (`io.modelcontextprotocol/serverInfo`). Whatever is left unset here is
+# therefore not merely missing once at connect time — it is missing from every
+# answer this server gives.
+#
+# Measured, not assumed: before this argument list carried `version`, a
+# `tools/list` over the modern wire came back with
+# `{"name": "swiss_transport_mcp", "version": ""}`. The `version` kwarg defaults
+# to `""` and nothing warns. The legacy `initialize` result said the same,
+# so this was never a 2026-only defect — only one the modern wire repeats on
+# every response instead of once.
+#
+# `version` and `website_url` come from the distribution metadata rather than
+# from literals: `scripts/check_version_sync.py` forbids a version literal
+# under `src/`, and a hand-copied URL is the same kind of second source.
 mcp = MCPServer(
     "swiss_transport_mcp",
+    title="Swiss Public Transport",
+    version=__version__,
+    website_url=__homepage__,
     cache_hints=CACHE_HINTS,
     instructions=(
         "Swiss public transport data server with 10 tools. "
@@ -604,6 +624,25 @@ async def _resolve_place(ref: str) -> tuple[str, str]:
 # ---------------------------------------------------------------------------
 
 
+# SEP-2577, Spec 2026-07-28: the logging capability is deprecated, and the SDK
+# marks `Context.info` / `.log` / `.debug` / `.warning` / `.error` deprecated
+# with it. Two tools used to announce themselves to the client that way
+# ("Fetching departures for stop ...", "Planning trip ... -> ...").
+#
+# At 2026-07-28 that line no longer reaches anyone by default:
+# `mcp.server.connection.allowed_log_levels` returns an EMPTY set unless the
+# request's `_meta` carried the reserved `io.modelcontextprotocol/logLevel`
+# key, and `send_log_message` then drops the entry. Progress chatter that
+# arrives only when the caller asked for logs is not an operator's log — so it
+# now goes where an operator actually reads it, the server's own stderr logger
+# (OBS-003/004, structured with LOG_FORMAT=json).
+#
+# Both tools consequently lost their `ctx: Context` parameter. That parameter
+# never appeared in the published input schema (the SDK strips it), so the
+# SEC-022 fingerprints are unchanged — a test holds that down rather than
+# leaving it to trust.
+
+
 @mcp.tool(
     name="transport_departures",
     annotations={
@@ -614,7 +653,7 @@ async def _resolve_place(ref: str) -> tuple[str, str]:
         "openWorldHint": True,
     },
 )
-async def transport_departures(params: DeparturesInput, ctx: Context) -> DeparturesResult:
+async def transport_departures(params: DeparturesInput) -> DeparturesResult:
     """Get upcoming departures or arrivals at a Swiss public transport stop.
 
     Shows real-time information including delays when available.
@@ -627,7 +666,7 @@ async def transport_departures(params: DeparturesInput, ctx: Context) -> Departu
         delay, and platform.
     """
     try:
-        await ctx.info(f"Fetching {params.event_type}s for stop {params.stop_id}")
+        logger.info("Fetching %ss for stop %s", params.event_type, params.stop_id)
         stop_id, resolved_name = await _resolve_place(params.stop_id)
         xml_request = ojp_client.build_stop_event_request(
             stop_ref=stop_id,
@@ -689,7 +728,7 @@ async def transport_departures(params: DeparturesInput, ctx: Context) -> Departu
         "openWorldHint": True,
     },
 )
-async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> TripPlanResult:
+async def transport_trip_plan(params: TripPlanInput) -> TripPlanResult:
     """Plan a journey between two locations in Switzerland.
 
     Works like the SBB app: enter origin and destination (stop IDs or
@@ -704,7 +743,7 @@ async def transport_trip_plan(params: TripPlanInput, ctx: Context) -> TripPlanRe
         total duration, number of transfers, and transport modes used.
     """
     try:
-        await ctx.info(f"Planning trip {params.origin} → {params.destination}")
+        logger.info("Planning trip %s -> %s", params.origin, params.destination)
         origin_id, origin_name = await _resolve_place(params.origin)
         destination_id, destination_name = await _resolve_place(params.destination)
         xml_request = ojp_client.build_trip_request(
