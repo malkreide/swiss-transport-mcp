@@ -55,7 +55,7 @@ dev = [
     # `pip install -e ".[dev]"` mit und hat keinen eigenen Pin-Schritt mehr.
     # Beim Anheben: Version aendern, `ruff format` einmal ueber src/ tests/
     # scripts/ laufen lassen und das Ergebnis mit committen.
-    "ruff==0.16.4",
+    "ruff==0.16.5",
 ]
 # OBS-006: opt-in OpenTelemetry tracing. Enable at runtime with
 # OTEL_TRACES_ENABLED=1. Without this extra, tracing is a no-op.
