@@ -262,21 +262,25 @@ eines Gates gehört nicht zurück. Was hier steht, ist eine Beobachtung über da
 Lesen eines Signals, und sie widerlegt genau die Annahme, die man ohne sie
 macht.
 
-**Ein Merge kappt einen laufenden Review nicht.** Über **fünf** PRs in
-`swiss-transport-mcp` gemessen — #67 am 18.9.2026, #72/#75/#76/#77 am 26.9.2026.
-Jeder wurde **drei bis fünf Sekunden** nach «ready for review» gemergt, jeder
-Review startete danach, jeder lief zu Ende, keiner fand etwas.
+**Ein Merge kappt einen laufenden Review nicht.** Über **sechs** PRs in
+`swiss-transport-mcp` gemessen — #67 am 18.9.2026, #72/#75/#76/#77/#78 am
+26.9.2026. Jeder wurde **drei bis fünf Sekunden** nach «ready for review»
+gemergt, jeder Review startete danach, jeder lief zu Ende, keiner fand etwas.
 
-Hier stand zuerst eine Tabelle mit den Einzelzeiten. Fünf gleiche Verläufe
+Hier stand zuerst eine Tabelle mit den Einzelzeiten. Gleichförmige Verläufe
 belegen aber nicht mehr als eine Spannweite, und jede weitere Zeile hätte den
-Abschnitt zum Logbuch gemacht. Was von der Reihe bleibt, ist die Dauer des
-ersten und des letzten Falls — damit die Spannweite belegt ist und nicht bloss
-behauptet.
+Abschnitt zum Logbuch gemacht. Der sechste Fall ist die Gegenprobe auf diese
+Form: #78 ist der PR, der die Tabelle durch die Spannweite ersetzte, und geriet
+dabei selbst in die Reihe — drei Sekunden nach «ready» gemergt (17:59:36 →
+17:59:39), `✅ Completed` um 18:00:21, kein Befund. Eine Tabelle hätte den Fall
+aufnehmen müssen; die Spannweite nahm ihn auf, ohne sich zu ändern.
 
 **Die brauchbarere Zahl ist die zweite:** Vom Umschalten auf «ready» bis
-`✅ Completed` vergingen **38 bis 75 Sekunden** (#67 als erster Fall 75, #77 als
-letzter 48). So lange müsste ein Merge warten, um das Ergebnis mitzunehmen —
-eine Grössenordnung, keine Garantie.
+`✅ Completed` vergingen **38 bis 75 Sekunden** — die Ränder trägt #72 mit 38
+und #67 mit 75. So lange müsste ein Merge warten, um das Ergebnis mitzunehmen —
+eine Grössenordnung, keine Garantie. Vorher standen hier der erste und der
+letzte Fall (75 und 48) — das benennt die Ränder nicht: der untere, 38, blieb
+damit unbelegt.
 
 Die erste Einordnung hier lautete «ungeprüft gemergt» und war falsch; sie stand
 einen halben Tag so in einem Notion-Eintrag. Der Fehler ist derselbe wie beim
@@ -294,9 +298,9 @@ Ankunft schon eine Zeile zu kurz.
 **Woran sich «geprüft» erkennen lässt.** Der Summary-Kommentar des Bots ist die
 tragende Form: eine Zeile, die von `🔄 Running` auf `✅ Completed` springt, mit
 Commit-Angabe. Ein Review-**Objekt** («💡 Codex Review») entsteht nur bei einem
-Befund — `get_reviews` gab in allen fünf Fällen `[]` zurück, und das ist kein
+Befund — `get_reviews` gab in allen sechs Fällen `[]` zurück, und das ist kein
 Hinweis auf einen ungeprüften PR. Eine gesonderte Befundlos-Meldung erschien in
-keinem der fünf Fälle.
+keinem der sechs Fälle.
 
 Praktisch heisst das: `get_comments` **und** `get_reviews` abfragen, und im
 Kommentar den **Text** lesen. Der Zähler trägt nichts — `comments: 1` deckt
@@ -305,9 +309,9 @@ gegensätzliche Zustände.
 
 **Der Infokasten ist keine Quelle.** Er behauptet unter jedem Lauf, der Bot
 reagiere mit 👀 während der Prüfung und mit 👍, wenn alles ohne Befund endet.
-In allen fünf Fällen stand `reactions.total_count` auf `0`. Diese Zeile stand
+In allen sechs Fällen stand `reactions.total_count` auf `0`. Diese Zeile stand
 in der entfernten Fassung dieses Abschnitts zwei Versionen lang als Tatsache
-und ist jetzt zum fünften Mal widerlegt.
+und ist jetzt zum sechsten Mal widerlegt.
 
 ### Wenn zwei Agenten dasselbe tun
 
