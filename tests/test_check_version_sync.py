@@ -255,9 +255,12 @@ class MainTest(unittest.TestCase):
         path = tmp / "pyproject.toml"
         if not path.exists():
             path.write_text('[project]\nname = "demo"\nversion = "1.0.0"\n', encoding="utf-8")
-        old = (cvs.ROOT, cvs.PYPROJECT, cvs.SERVER_JSON, cvs.SRC)
+        old = (cvs.ROOT, cvs.PYPROJECT, cvs.SERVER_JSON, cvs.SRC, cvs.CHANGELOG)
         cvs.ROOT, cvs.PYPROJECT = tmp, tmp / "pyproject.toml"
         cvs.SERVER_JSON, cvs.SRC = tmp / "server.json", tmp / "src"
+        # Ohne das liest der Check den CHANGELOG des echten Repos, und jeder
+        # Fall haengt daran, was dort gerade offen steht.
+        cvs.CHANGELOG = tmp / "CHANGELOG.md"
         out, err = io.StringIO(), io.StringIO()
         try:
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
@@ -266,7 +269,7 @@ class MainTest(unittest.TestCase):
         except SystemExit as exc:
             code = exc.code
         finally:
-            cvs.ROOT, cvs.PYPROJECT, cvs.SERVER_JSON, cvs.SRC = old
+            cvs.ROOT, cvs.PYPROJECT, cvs.SERVER_JSON, cvs.SRC, cvs.CHANGELOG = old
         return code, out.getvalue() + err.getvalue()
 
     def test_abweichende_pins_sind_rot(self):
@@ -391,6 +394,96 @@ class ExpectTest(unittest.TestCase):
             code, text = self.run_main(path, ["--expect", "0.5.0"])
         self.assertEqual(code, 1)
         self.assertIn("NICHT PRUEFBAR", text)
+
+
+class ChangelogGateTest(unittest.TestCase):
+    """`--expect` prueft auch den CHANGELOG — die zweite Haelfte des Gates.
+
+    Zweimal im Portfolio passiert, beide Male gemessen: Ein PR mergt, nachdem
+    der Versionsabschnitt geschlossen wurde, aber vor dem Tag. Das Release
+    traegt den Eintrag dann als «unveroeffentlicht», obwohl er darin steckt —
+    `v0.4.0` mit dem SEC-005-Eintrag, `v0.5.0` mit dem Publish-Pfad-Eintrag.
+    Eine Zeile in CONTRIBUTING haette keinen der beiden Faelle verhindert;
+    beide entstanden, obwohl die Regel bekannt war.
+    """
+
+    run_main = MainTest.run_main
+
+    def tree(self, path: Path, version: str, changelog: str | None) -> None:
+        (path / "pyproject.toml").write_text(
+            f'[project]\nname = "demo"\nversion = "{version}"\n', encoding="utf-8"
+        )
+        if changelog is not None:
+            (path / "CHANGELOG.md").write_text(changelog, encoding="utf-8")
+
+    def test_geschlossener_abschnitt_und_leeres_unreleased_sind_gruen(self):
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            self.tree(path, "0.5.0", "# Changelog\n\n## [0.5.0] - 2026-09-26\n\n- etwas\n")
+            code, text = self.run_main(path, ["--expect", "v0.5.0"])
+        self.assertEqual(code, 0, text)
+
+    def test_offener_unreleased_eintrag_ist_rot(self):
+        """Der gemessene Fall, in der Form, in der er zweimal auftrat."""
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            self.tree(
+                path,
+                "0.5.0",
+                "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n"
+                "- **Der Publish-Pfad konnte still die falsche Version bauen.**\n\n"
+                "## [0.5.0] - 2026-09-26\n\n- etwas\n",
+            )
+            code, text = self.run_main(path, ["--expect", "v0.5.0"])
+        self.assertEqual(code, 1)
+        self.assertIn("Unreleased", text)
+        # Die offene Zeile muss in der Absage stehen: «nicht leer» allein
+        # laesst offen, welcher Eintrag einzusortieren ist.
+        self.assertIn("Publish-Pfad", text)
+
+    def test_eine_leere_unreleased_ueberschrift_allein_ist_kein_befund(self):
+        """Die Gegenprobe: gemeldet wird Inhalt, nicht die Ueberschrift.
+
+        Ohne diese Zeile koennte das Gate auf `## [Unreleased]` selbst
+        anspringen — und jeder Release scheiterte an einem Abschnitt, der
+        konventionsgemaess leer dastehen darf. Die Rubrik `### Fixed` zaehlt
+        aus demselben Grund nicht als Inhalt.
+        """
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            self.tree(
+                path,
+                "0.5.0",
+                "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n"
+                "## [0.5.0] - 2026-09-26\n\n- etwas\n",
+            )
+            code, text = self.run_main(path, ["--expect", "v0.5.0"])
+        self.assertEqual(code, 0, text)
+
+    def test_fehlender_versionsabschnitt_ist_rot(self):
+        """Ein Release ohne Eintrag ist die andere Haelfte desselben Fehlers."""
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            self.tree(path, "0.5.0", "# Changelog\n\n## [0.4.0] - 2026-07-30\n\n- alt\n")
+            code, text = self.run_main(path, ["--expect", "v0.5.0"])
+        self.assertEqual(code, 1)
+        self.assertIn("0.5.0", text)
+
+    def test_ohne_changelog_datei_kein_befund(self):
+        """Ein Repo ohne CHANGELOG ist kein Fehler, nur eines mit einem
+        widerspruechlichen."""
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            self.tree(path, "0.5.0", None)
+            code, text = self.run_main(path, ["--expect", "v0.5.0"])
+        self.assertEqual(code, 0, text)
+
+    def test_ohne_das_flag_bleibt_der_changelog_ungeprueft(self):
+        """Die gewoehnliche CI laeuft ohne `--expect` und darf an einem
+        offenen `[Unreleased]` nicht scheitern — dort ist er der Normalfall."""
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            self.tree(
+                path,
+                "0.5.0",
+                "# Changelog\n\n## [Unreleased]\n\n- etwas Offenes\n",
+            )
+            code, text = self.run_main(path)
+        self.assertEqual(code, 0, text)
 
 
 if __name__ == "__main__":
