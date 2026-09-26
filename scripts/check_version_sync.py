@@ -34,7 +34,10 @@ schon.
 Verwendung:
     python scripts/check_version_sync.py     # exit 1 bei Abweichung
     python scripts/check_version_sync.py --expect v0.5.0
-        # zusätzlich: die committete Version MUSS diesen Tag nennen.
+        # zusätzlich: die committete Version MUSS diesen Tag nennen, der
+        # CHANGELOG MUSS einen Abschnitt dafür haben, und «[Unreleased]» MUSS
+        # leer sein — sonst geht ein Eintrag als unveröffentlicht hinaus, der
+        # in diesem Release steckt.
         # Ein führendes `v` wird abgeschnitten — die Tags dieses Repos
         # tragen es, `pyproject.toml` nicht.
 
@@ -59,6 +62,7 @@ except ModuleNotFoundError:  # Python 3.10 — tomllib kam erst mit 3.11
 ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = ROOT / "pyproject.toml"
 SERVER_JSON = ROOT / "server.json"
+CHANGELOG = ROOT / "CHANGELOG.md"
 SRC = ROOT / "src"
 
 # Shields.io-Badge: ![Version](https://img.shields.io/badge/version-X.Y.Z-blue)
@@ -285,6 +289,35 @@ def read_project() -> dict:
     return out
 
 
+def changelog_findings(version: str) -> tuple[bool, list[str]]:
+    """`(Abschnitt fuer `version` vorhanden, offene `[Unreleased]`-Zeilen)`.
+
+    Nur fuer den Release-Pfad gedacht. Die zweite Haelfte ist die wichtigere:
+    Ein `[Unreleased]`-Abschnitt mit Inhalt bedeutet zum Tag-Zeitpunkt, dass
+    zwischen dem Schliessen des Versionsabschnitts und dem Tag noch etwas
+    gemergt wurde. Genau das ist im Portfolio zweimal passiert, und beide Male
+    trug das Release einen Eintrag als «unveroeffentlicht», der darin steckte:
+    der SEC-005-Eintrag in `v0.4.0` und der Publish-Pfad-Eintrag in `v0.5.0`.
+
+    Fehlt die Datei, gibt es nichts zu melden — ein Repo ohne CHANGELOG ist
+    kein Fehler, nur eines mit einem widerspruechlichen.
+    """
+    if not CHANGELOG.exists():
+        return True, []
+    lines = CHANGELOG.read_text(encoding="utf-8").split("\n")
+    has_section = any(line.startswith(f"## [{version}]") for line in lines)
+
+    open_lines: list[str] = []
+    inside = False
+    for line in lines:
+        if line.startswith("## "):
+            inside = line.strip() == "## [Unreleased]"
+            continue
+        if inside and line.strip() and not line.startswith("### "):
+            open_lines.append(line.strip())
+    return has_section, open_lines
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Versions-Synchronität prüfen (siehe Modul-Docstring).",
@@ -340,6 +373,36 @@ def main(argv: list[str] | None = None) -> None:
             file=sys.stderr,
         )
         sys.exit(1)
+
+    if expected is not None:
+        has_section, open_lines = changelog_findings(version)
+        if not has_section:
+            print(
+                f"CHANGELOG: kein Abschnitt «## [{version}]». Der Release "
+                "wuerde ohne Eintrag hinausgehen.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        if open_lines:
+            print(
+                "CHANGELOG: «## [Unreleased]» ist zum Tag-Zeitpunkt nicht leer "
+                f"— {len(open_lines)} Zeile(n). Was hier steht, wird mit "
+                f"{version} ausgeliefert und trotzdem als unveroeffentlicht "
+                "gefuehrt.",
+                file=sys.stderr,
+            )
+            for line in open_lines[:3]:
+                print(f"  {line[:100]}", file=sys.stderr)
+            print(
+                "\nUrsache ist immer dieselbe: Ein PR mergt, nachdem der "
+                f"Versionsabschnitt geschlossen wurde, aber bevor getaggt "
+                "wird. Den Eintrag unter "
+                f"«## [{version}]» einsortieren (oder, wenn er wirklich erst "
+                "ins naechste Release gehoert, den Tag vor diesem Merge "
+                "setzen), dann neu taggen.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
     found = collect_declared(version)
     mismatches = [(where, value) for where, value in found if value != version]

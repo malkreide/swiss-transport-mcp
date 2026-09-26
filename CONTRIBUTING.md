@@ -32,6 +32,30 @@ Thank you for your interest in this project! Contributions are welcome.
 
 Integration tests require a free API key from [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/). **Never** commit API keys.
 
+## Releases
+
+The release order is not interchangeable: **bump first, tag second.**
+
+1. One commit on `main` moving the version everywhere `scripts/check_version_sync.py`
+   compares it — `pyproject.toml`, `server.json` (`version` *and*
+   `packages[0].version`), and the version badge in both READMEs.
+2. In the same commit, close `## [Unreleased]` into `## [X.Y.Z] – <date>`.
+3. Then tag `vX.Y.Z` and **publish a GitHub release**. A tag alone ships
+   nothing: `publish.yml` triggers on `release: published`, which is how
+   `v0.3.2` and `v0.3.3` ended up as tags that never reached PyPI.
+
+`publish.yml` runs `check_version_sync.py --expect "$GITHUB_REF_NAME"` in both
+jobs, before anything leaves the runner. It aborts when the tag and the
+committed version disagree, when the CHANGELOG has no section for the version,
+or when `## [Unreleased]` still holds entries.
+
+That last check exists because the mistake happened twice, both times despite
+the rule being known: a pull request merges *after* the version section is
+closed but *before* the tag, so the release carries an entry marked
+unreleased that it actually shipped. `v0.4.0` did it with the SEC-005 entry,
+`v0.5.0` with the publish-path entry. If the check fires, either file the
+entry under the version being released, or cut the tag before that merge.
+
 ## License
 
 MIT – see [LICENSE](LICENSE)

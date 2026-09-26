@@ -7,37 +7,37 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
-- **Der Publish-Pfad konnte still die falsche Version bauen.** `publish.yml`
-  synchronisierte `server.json` aus dem Tag-Namen, der PyPI-Job baute daneben
-  mit `python -m build` aus dem Tag-Checkout — also aus `pyproject.toml`, das
-  niemand gegen den Tag abglich. Ein Tag `v0.5.0` auf einem `pyproject.toml`
-  mit `0.4.0` hätte damit ein Paket `0.4.0` gebaut: PyPI lehnt es als Duplikat
-  ab, oder es geht als bereits veröffentlichte Version durch, während die
-  MCP-Registry brav `0.5.0` meldet.
+- **Der Publish-Pfad-Eintrag stand im Tag `v0.5.0` als unveröffentlicht, obwohl
+  er darin steckte.** Gemessen, nicht geschlossen:
+  `git merge-base --is-ancestor 6a2e235 v0.5.0` bestätigt, dass PR #75 Vorfahr
+  des Tags ist, und das getaggte `publish.yml` trägt den Verify-Schritt zweimal.
+  Der Eintrag wandert unter `## [0.5.0]`.
 
-  `scripts/check_version_sync.py` kannte den Fall nicht — es vergleicht
-  `pyproject.toml` gegen `server.json` und die README-Badges, und ein Tag-Name
-  kommt darin nicht vor. Neu nimmt es `--expect <Version>` und bricht ab, wenn
-  die committete Version eine andere ist. `publish.yml` ruft es damit in
-  beiden Jobs auf, jeweils vor dem ersten Schritt, der etwas nach draussen
-  gibt.
+  Es ist der **zweite** Vorfall derselben Klasse. Beim 0.5.0-Release musste der
+  SEC-005-Eintrag aus demselben Grund von `[Unreleased]` nach `[0.4.0]`
+  verschoben werden. Die Mechanik ist jedes Mal dieselbe: Ein PR mergt,
+  nachdem der Versionsabschnitt geschlossen wurde, aber bevor getaggt wird.
 
-  **Geprüft statt geflickt.** Der `jq`-Schritt, der `server.json` aus dem Tag
-  überschrieb, fällt weg. Er war der Grund, warum eine veraltete committete
-  Version nie auffiel: Das publizierte Manifest war immer richtig, die Datei
-  im Repo durfte falsch bleiben. Der Docstring des Checks nennt genau das seit
-  jeher als Hintergrund — jetzt stimmt die Beschreibung wieder mit dem
-  Verhalten überein. Nach dem Abgleich ist der Schritt ohnehin redundant:
-  `server.json` passt zu `pyproject.toml`, und dieses zum Tag.
+### Hinzugefuegt
 
-  Die Logik steht im Skript, nicht in der YAML-Shell, damit sie prüfbar ist —
-  ein Schritt, der einmal pro Release läuft und nie in der gewöhnlichen CI,
-  ist der schlechteste Ort für ungeprüften Code. Fünf Tests in beide
-  Richtungen: passender Tag grün, abweichender rot mit beiden Nummern in der
-  Absage, führendes `v` abgeschnitten (die Tags dieses Repos tragen es), eine
-  dynamische Version als «nicht prüfbar» statt still grün — und die
-  Gegenprobe, dass ohne das Flag gar nichts verglichen wird, damit die
-  gewöhnliche CI nicht an einer Tag-Nummer scheitert, die es dort nicht gibt.
+- **`--expect` prüft jetzt auch den CHANGELOG** — die Konsequenz aus diesen
+  zwei Vorfällen. Der Release-Pfad bricht ab, wenn der CHANGELOG keinen
+  Abschnitt für die Version hat oder wenn `## [Unreleased]` zum Tag-Zeitpunkt
+  noch Einträge trägt. Gemeldet wird Inhalt, nicht die Überschrift: Ein leer
+  dastehender `[Unreleased]`-Abschnitt und seine Rubriken sind kein Befund.
+
+  **Gegen die echten Fälle gefahren, nicht nur gegen Fixtures.** Mit dem
+  CHANGELOG aus dem Tag `v0.5.0`: exit 1, «`[Unreleased]` ist zum Tag-Zeitpunkt
+  nicht leer — 28 Zeile(n)», mit dem Publish-Pfad-Eintrag in der Absage. Mit
+  dem CHANGELOG aus `v0.4.0`: exit 1, 27 Zeilen, mit dem SEC-005-Eintrag. Beide
+  historischen Vorfälle wären gefangen worden.
+
+  Warum ein Gate und nicht eine Zeile in der Doku: Beide Vorfälle entstanden,
+  **obwohl die Regel bekannt war** — beim zweiten stand sie sogar im PR-Text
+  desselben PR, der den Fehler einführte. Eine Prüfung, die niemand lesen muss,
+  ist hier die einzige Form, die trägt. Die Regel steht zusätzlich in beiden
+  CONTRIBUTING-Dateien, samt der Reihenfolge «zuerst bumpen, dann taggen» und
+  dem Hinweis, dass ein Tag ohne veröffentlichten Release nichts publiziert.
 
 ## [0.5.0] – 2026-09-26
 
@@ -257,6 +257,38 @@ jetzt `LIVE_SCHEDULED`.
   Secrets kann an dieser Gate also nicht scheitern.
 
 ### Fixed
+
+- **Der Publish-Pfad konnte still die falsche Version bauen.** `publish.yml`
+  synchronisierte `server.json` aus dem Tag-Namen, der PyPI-Job baute daneben
+  mit `python -m build` aus dem Tag-Checkout — also aus `pyproject.toml`, das
+  niemand gegen den Tag abglich. Ein Tag `v0.5.0` auf einem `pyproject.toml`
+  mit `0.4.0` hätte damit ein Paket `0.4.0` gebaut: PyPI lehnt es als Duplikat
+  ab, oder es geht als bereits veröffentlichte Version durch, während die
+  MCP-Registry brav `0.5.0` meldet.
+
+  `scripts/check_version_sync.py` kannte den Fall nicht — es vergleicht
+  `pyproject.toml` gegen `server.json` und die README-Badges, und ein Tag-Name
+  kommt darin nicht vor. Neu nimmt es `--expect <Version>` und bricht ab, wenn
+  die committete Version eine andere ist. `publish.yml` ruft es damit in
+  beiden Jobs auf, jeweils vor dem ersten Schritt, der etwas nach draussen
+  gibt.
+
+  **Geprüft statt geflickt.** Der `jq`-Schritt, der `server.json` aus dem Tag
+  überschrieb, fällt weg. Er war der Grund, warum eine veraltete committete
+  Version nie auffiel: Das publizierte Manifest war immer richtig, die Datei
+  im Repo durfte falsch bleiben. Der Docstring des Checks nennt genau das seit
+  jeher als Hintergrund — jetzt stimmt die Beschreibung wieder mit dem
+  Verhalten überein. Nach dem Abgleich ist der Schritt ohnehin redundant:
+  `server.json` passt zu `pyproject.toml`, und dieses zum Tag.
+
+  Die Logik steht im Skript, nicht in der YAML-Shell, damit sie prüfbar ist —
+  ein Schritt, der einmal pro Release läuft und nie in der gewöhnlichen CI,
+  ist der schlechteste Ort für ungeprüften Code. Fünf Tests in beide
+  Richtungen: passender Tag grün, abweichender rot mit beiden Nummern in der
+  Absage, führendes `v` abgeschnitten (die Tags dieses Repos tragen es), eine
+  dynamische Version als «nicht prüfbar» statt still grün — und die
+  Gegenprobe, dass ohne das Flag gar nichts verglichen wird, damit die
+  gewöhnliche CI nicht an einer Tag-Nummer scheitert, die es dort nicht gibt.
 
 - **Der Server nannte sich auf dem Draht ohne Version.** Gemessen an der
   eigenen ASGI-App: ein `tools/list` ueber die Revision `2026-07-28` kam

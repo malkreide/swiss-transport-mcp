@@ -32,6 +32,33 @@ Vielen Dank für Ihr Interesse an diesem Projekt! Beiträge sind willkommen.
 
 Für Integrationstests brauchen Sie einen kostenlosen API-Key von [api-manager.opentransportdata.swiss](https://api-manager.opentransportdata.swiss/). Committen Sie **niemals** API-Keys.
 
+## Releases
+
+Die Reihenfolge ist nicht beliebig: **zuerst bumpen, dann taggen.**
+
+1. Ein Commit auf `main`, der die Version an allen Stellen bewegt, die
+   `scripts/check_version_sync.py` vergleicht — `pyproject.toml`, `server.json`
+   (`version` **und** `packages[0].version`) sowie das Versions-Badge in beiden
+   READMEs.
+2. Im selben Commit `## [Unreleased]` zu `## [X.Y.Z] – <Datum>` schliessen.
+3. Erst dann `vX.Y.Z` taggen und einen **GitHub-Release veröffentlichen**. Ein
+   Tag allein publiziert nichts: `publish.yml` löst auf `release: published`
+   aus — so sind `v0.3.2` und `v0.3.3` als Tags liegengeblieben, die nie auf
+   PyPI kamen.
+
+`publish.yml` fährt `check_version_sync.py --expect "$GITHUB_REF_NAME"` in
+beiden Jobs, jeweils bevor etwas den Runner verlässt. Der Lauf bricht ab, wenn
+Tag und committete Version auseinanderlaufen, wenn der CHANGELOG keinen
+Abschnitt für die Version hat, oder wenn `## [Unreleased]` noch Einträge trägt.
+
+Die letzte Prüfung gibt es, weil der Fehler zweimal passiert ist — beide Male,
+obwohl die Regel bekannt war: Ein Pull Request mergt, **nachdem** der
+Versionsabschnitt geschlossen wurde, aber **bevor** getaggt wird. Das Release
+trägt dann einen Eintrag als unveröffentlicht, den es ausgeliefert hat.
+`v0.4.0` mit dem SEC-005-Eintrag, `v0.5.0` mit dem Publish-Pfad-Eintrag.
+Schlägt die Prüfung zu: den Eintrag unter der Version einsortieren, die
+released wird — oder das Tag vor diesem Merge setzen.
+
 ## Lizenz
 
 MIT – siehe [LICENSE](LICENSE)
