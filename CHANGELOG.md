@@ -3,7 +3,222 @@
 Alle relevanten Änderungen an diesem Projekt werden hier dokumentiert.
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [0.5.0] – 2026-09-26
+
+### Added
+
+- **Die Revision `2026-07-28` wird jetzt gemessen, nicht behauptet**
+  (`tests/test_modern_wire.py`, 20 Faelle). Gefahren wird gegen
+  `_build_http_app` — die App, die `main()` unter uvicorn stellt —, mit echten
+  Einzelaustausch-POSTs ohne `initialize` und ohne `Mcp-Session-Id`:
+  `server/discover` (`supportedVersions`), `tools/list` (`resultType`,
+  Werkzeugsatz gegen das gepinnte Manifest, `ttlMs`/`cacheScope` ueber den
+  Transport statt nur im Prozess), ein `tools/call` mit `Mcp-Name`-Wegweiser,
+  die drei Absage-Sprossen der Ladder (fehlender Umschlag → `-32602`,
+  Wegweiser-Kopfzeile im Widerspruch zum Rumpf → `-32020`, nicht bediente
+  Revision → `-32022` samt Liste der bedienten) und die Grenze zwischen den
+  Aeren: ein `initialize`, das `2026-07-28` verlangt, bekommt die Decke der
+  alten Aera, und ein moderner Umschlag mit `2025-11-25` faellt auf den
+  Legacy-Pfad.
+
+  `tests/test_protocol_version.py` nannte seinen Konstanten-Pin bisher selbst
+  die schwaechere Form und begruendete das damit, dieses Repo baue keine
+  ASGI-App, durch die sich eine Anfrage schicken liesse. **Das stimmte nicht** —
+  `_build_http_app` baut sie, und `tests/test_cors.py` fuhr schon damals einen
+  `TestClient` dagegen. Die Begruendung war keine Messgrenze, sondern eine
+  ungepruefte Annahme ueber das eigene Repo; beide READMEs und der Docstring
+  sagen das jetzt so. Der Konstanten-Pin bleibt daneben stehen: er sichert, was
+  das SDK *anbietet*, die Messung, was der Server davon *bedient*.
+
+- **Frischehinweise auf den auflistenden Methoden** (SEP-2549, Spec
+  `2026-07-28`): `ttlMs` 300000, `cacheScope` `public`. Das SDK setzt beides von
+  sich aus auf «sofort veraltet, nie geteilt» — wer nichts übergibt, lässt jeden
+  Client bei jeder Verbindung neu auflisten, für Verzeichnisse, die per
+  Dekorator beim Import feststehen und nicht vom Aufrufer abhängen.
+
+  `resources/read` und `prompts/get` bleiben ohne Hinweis: das wäre eine
+  Zusicherung über den Inhalt statt über das Verzeichnis. Ein Test hält das an
+  der Antwort fest, ein zweiter an der Konfiguration.
+
+- **Protokoll-Gate: beide Spec-Aeren gepinnt und geprueft**
+  (`tests/test_protocol_version.py`). `mcp` 2.x bedient zwei Aeren ueber
+  denselben Server — den `initialize`-Handshake, der bei `2025-11-25`
+  deckelt, und den Pro-Request-Envelope, der `2026-07-28` erreicht.
+  `LATEST_PROTOCOL_VERSION` ist ein Alias auf die **moderne** Aera; wer nur
+  dagegen pinnt, laesst genau die Aera frei wandern, die heutige Clients
+  aushandeln. Beide sind jetzt einzeln gepinnt, ein Dependabot-Bump von
+  `mcp` kann keine davon still verschieben.
+
+  Ohne gemessenen Teil: dieser Server baut keine ASGI-App, durch die sich ein
+  `initialize` schicken liesse. Das Gate haengt deshalb an den SDK-Konstanten —
+  die schwaechere Form, im Docstring benannt statt verschwiegen.
+
+  Beide READMEs beschreiben die Aeren; ein Test haelt jede Sprache einzeln
+  dagegen — im Portfolio sind EN und DE desselben Repos schon dreimal
+  auseinandergelaufen, weil nur eine Fassung nachgezogen wurde.
+
+#### Aufgezeichnete Herkunft fuer das, was sich aufzeichnen laesst
+
+Alle vier Quellen verlangen einen Bearer-Token; ohne ihn antworten sie mit 401
+bzw. 403 — gemessen, nicht behauptet, und in
+`tests/fixtures/upstream_auth_probe.json` festgehalten. Echte Antwort-Fixtures
+sind hier also nicht ehrlich moeglich, und `PROVENANCE.md` sagt das
+ausdruecklich, statt den handgeschriebenen Payloads ein Datum anzuschreiben, das
+nicht stimmt.
+
+Aufzeichenbar ist der Vertrag. `scripts/record_fixtures.py` liest das
+OJP-2.0-Schema am festen Tag `v2.0` und schreibt einen **abgeleiteten Index**
+(`tests/fixtures/ojp_2_0_contract.json`: 508 Elementnamen, 16 Strukturen, 25
+Gruppen, 3 Aufzaehlungen) samt Quell-URL und SHA-256 jeder gelesenen Datei.
+`--check` rechnet die Ableitung gegen die Quelle nach.
+
+Das Schema selbst liegt **nicht** im Repo: Das Quell-Repository fuehrt keine
+Lizenzdatei, und die zugrunde liegende Norm ist kostenpflichtig. Gruppenverweise
+bleiben im Index unaufgeloest — wer sie beim Aufzeichnen aufloest, schreibt seine
+eigene Lesart hinein und kann sie danach nicht mehr widerlegen.
+
+`tests/test_ojp_contract.py` und `tests/test_place_resolution.py` halten
+Anfragen, Parser und Aufloesung dagegen. Alle neuen Zusicherungen sind
+gegengeprueft: mit zurueckgedrehtem Produktivcode fallen sie, und zwar mit dem
+Befund im Text.
+
+#### Die Live-Suite laeuft geplant, statt nur markiert zu sein
+
+`ci.yml` faehrt `pytest tests/ -m "not live"`. Das ist richtig — ein fremder 503
+darf keinen fremden Pull Request rot machen — und es liess die Live-Tests seit
+ihrer Entstehung an keiner Stelle laufen. **`-m "not live"` ist kein Ort, an dem
+Tests laufen; es ist die Abwesenheit eines solchen.**
+
+Ausgerechnet sie sind die einzigen im Repo, die einer falschen Grundannahme
+ueber opentransportdata.swiss widersprechen koennen: Jeder andere Test prueft gegen eine
+Fixture, und die Fixture ist aus derselben Annahme geschrieben wie der Code. Bei
+`meteoswiss-mcp` fielen am 30.7.2026 beim ersten Lauf seit Monaten drei von sechs
+Tests; bei `zh-education-mcp` lief am 3.8.2026 der Code monatelang gegen
+umbenannte Feldnamen, ohne dass ein Test rot wurde.
+
+`.github/workflows/live-tests.yml`: montags 05:19 UTC auf einer ungeraden Minute, dazu
+`workflow_dispatch`. Der PR-Lauf bleibt unveraendert — dies ist ein
+*zusaetzlicher* Lauf, kein Umbau.
+
+**Drei Antworten, nicht zwei.** `if: failure()` kennt rot und nicht rot; ein
+gescheitertes `pip install` saehe damit aus wie ein gebrochener Vertrag mit der
+Quelle. `scripts/classify_live_run.py` liest deshalb das JUnit-XML und trennt
+`clear`, `finding` und `unknown`. Ein `unknown` schliesst nie ein Issue:
+zuzumachen hiesse zu behaupten, der Vergleich sei gelaufen.
+
+Der Fall, der die Einordnung noetig macht, ist der uebersprungene Lauf: pytest
+endet mit 0, wenn jeder Test uebersprungen wurde. `tests - skipped == 0` ist
+deshalb `unknown` — gemessen am 7.8.2026 an `swiss-transport-mcp`, wo ohne
+`TRANSPORT_API_KEY` alle sechs Live-Tests uebersprungen werden und ein
+Exit-Code-Check gruen gemeldet haette.
+
+Die Einordnung steht in einem Skript mit eigenem Test, nicht in einem
+`run:`-Block: Sie entscheidet, ob ein Issue auf- oder zugeht, und das ist der
+einzige Teil des Workflows, der etwas behauptet.
+
+Ein Issue mit stabilem Titel-Praefix und Label `upstream` wird kommentiert statt
+verdoppelt. Die pytest-Ausgabe geht ueber `env` ins Skript, nicht ueber `${ }`
+— sie ist fremder Text, der sonst in einem JavaScript-Template-Literal landet.
+
+Kadenz und Zustaendigkeit stehen in CONTRIBUTING (beide Sprachen). Gemessen mit
+`live_schedule_probe` aus `mcp-continuous-auditor`: vorher `LIVE_UNSCHEDULED`,
+jetzt `LIVE_SCHEDULED`.
+
+- **Retry-Politik gegenüber opentransportdata.swiss** (ARCH-014), in einem
+  gemeinsamen Kern (`retry.py`) für alle vier Aufrufstellen: `ojp_request`,
+  `ckan_request` sowie `TransportAPIClient.get` und `.post_xml`.
+
+  Bisher gab es keine — obwohl der Docstring von `TransportAPIClient`
+  «Fehlerbehandlung (Retries, Timeouts, HTTP-Fehler)» versprach. Ein einzelner
+  Netzwerkfehler, ein Timeout oder ein 503 beendete den Tool-Aufruf.
+
+  Wiederholt werden Netzwerkfehler, Timeouts, 5xx und 429 — vier Versuche. Ein
+  4xx ausser 429 scheitert weiterhin sofort; ebenso jeder `ValueError`. Das
+  betrifft namentlich den 403-Pfad von CKAN: Die Meldung nennt das fehlende
+  Abo im API-Manager und ist damit das, was den Fehler behebbar macht — sie
+  darf nicht hinter einem generischen Retry verschwinden.
+
+- **`Retry-After` wird gelesen und schlägt die eigene Backoff-Kurve**, in
+  beiden Formen nach RFC 9110 §10.2.3 (Sekundenzahl und HTTP-Datum). Ein
+  unbrauchbarer Header führt zurück auf die Kurve statt zum Absturz.
+
+- **Backoff ist gestreut (Jitter).** `2**attempt` ist deterministisch: Fällt
+  die Quelle aus, während mehrere Clients sie abfragen, laufen deren Retries im
+  Gleichtakt und die Last kommt als Welle zurück — genau wenn die Quelle sich
+  erholt. Exponentiell `[0.5x, 1.5x]`, auf einem `Retry-After` einseitig
+  `[1.0x, 1.25x]`. Deckel von 20 s je Einzelwartezeit, angewandt **nach** dem
+  Jittern — die andere Reihenfolge macht den Deckel zu gar keiner Schranke.
+
+- **Gesamtbudget über den ganzen Aufruf: 25 s, für OJP 45 s.** Die Abweichung
+  ist begründet und nicht versehentlich: `OJP_TIMEOUT = 45.0` steht seit je im
+  Repo, weil Trip-Berechnungen länger dauern. Ein 25-s-Budget hätte legitime
+  Verbindungsabfragen abgewürgt, die heute durchgehen — der Retry soll
+  Ausfälle überbrücken und nicht funktionierende Anfragen kürzen. Ein Test
+  hält beide Werte gegen `MCP_DEFAULT_TIMEOUT` fest.
+
+  Das Budget hängt an einer `asyncio.timeout`-Deadline, nicht am
+  httpx-Timeout: httpx begrenzt pro Operation, und sein Read-Timeout beginnt
+  mit jedem Chunk von vorn — eine langsam tröpfelnde Antwort würde das Budget
+  sonst überdauern, ohne dass ein einzelner Read abläuft.
+
+- **Der Rate-Limiter zählt jeden Versuch, nicht jeden Aufruf.** Ein Retry ist
+  eine weitere Abfrage bei der Quelle. Zählte nur der erste, meldete der
+  Limiter weniger Verbrauch, als er zugelassen hat — und ausgerechnet ein
+  Server, der wegen Überlast 503 sendet, bekäme ungezählte Wiederholungen.
+
+### Changed
+
+- **Zwei Werkzeuge meldeten ihren Fortschritt ueber eine abgekuendigte
+  Faehigkeit.** `transport_departures` und `transport_trip_plan` schrieben
+  `await ctx.info(...)`. SEP-2577 kuendigt die Logging-Faehigkeit mit
+  `2026-07-28` ab, und die Revision macht die Zustellung zu einem Opt-in **pro
+  Anfrage**: ohne den reservierten `_meta`-Schluessel
+  `io.modelcontextprotocol/logLevel` liefert `allowed_log_levels` eine leere
+  Menge, und `send_log_message` verwirft den Eintrag. Eine Fortschrittsmeldung,
+  die nur ankommt, wenn der Aufrufer vorher Logs bestellt hat, ist kein
+  Betriebslog — sie steht jetzt im stderr-Logger des Servers (OBS-003/004, mit
+  `LOG_FORMAT=json` strukturiert).
+
+  Beide Werkzeuge haben damit ihren `ctx: Context`-Parameter verloren. Er stand
+  nie im veroeffentlichten Input-Schema — das SDK filtert ihn heraus —, die
+  SEC-022-Fingerabdruecke sind deshalb unveraendert und `tool_manifest.json`
+  brauchte keine Neuberechnung; `test_tool_integrity.py` haelt das fest, statt
+  es zu glauben. Mit dem Parameter fielen auch die beiden handgeschriebenen
+  `_Ctx`-Stubs aus den Tests weg, die genau eine Methode kannten, weil genau
+  eine benutzt wurde.
+
+- **`live-tests.yml` prüft den Schlüssel jetzt zuerst, statt ihn erraten zu
+  lassen.** Ein Lauf von Hand am 2026-08-10 ohne gesetztes `TRANSPORT_API_KEY`
+  endete mit:
+
+  ```
+  Live-Suite: unknown
+  alle 7 Test(s) uebersprungen — meist ein fehlendes Secret oder eine nicht
+  erfuellte Vorbedingung. Geprueft wurde nichts
+  ```
+
+  Das Urteil ist richtig und bleibt es: pytest endet mit `0`, wenn sich jeder
+  Test übersprungen hat, und `classify_live_run.py` liest deshalb das JUnit-XML
+  statt des Exit-Codes. Genau dafür wurde es geschrieben.
+
+  Nur kann der Klassifikator aus dem XML nicht sehen, **welche** Vorbedingung
+  gefehlt hat — ein fehlendes Secret und eine umbenannte Marke sehen dort
+  identisch aus. Also nennt er beide, und der Leser sucht sich die Antwort über
+  Workflow, Testdatei und Klassifikator zusammen.
+
+  Der fehlende Schlüssel ist der eine Fall, den man **vorher** kennen kann. Eine
+  Gate ganz vorne prüft `secrets.TRANSPORT_API_KEY` und nennt ihn beim Namen,
+  bevor Checkout, Installation und Suite überhaupt laufen.
+
+  Sie ersetzt die Einordnung nicht — sie kommt ihr nur in diesem einen Fall
+  zuvor. Timeout, gescheitertes `pip install`, umbenannte Marke: alles fällt
+  weiterhin dort an und wird dort `unknown`.
+
+  Am Issue ändert der früh rote Job nichts, und das ist richtig: `unknown`
+  öffnet und schliesst ebenfalls keines. Ein Lauf ohne Vergleich darf keinen
+  behaupten — in beide Richtungen. Der Workflow läuft ausserdem nur auf
+  `schedule` und `workflow_dispatch`, nie auf `pull_request`; ein Fork ohne
+  Secrets kann an dieser Gate also nicht scheitern.
 
 ### Fixed
 
@@ -39,54 +254,6 @@ All notable changes to this project are documented here.
   Checkout) ist `__homepage__` `None` und das Feld faellt weg, statt eine
   geratene URL zu melden.
 
-### Changed
-
-- **Zwei Werkzeuge meldeten ihren Fortschritt ueber eine abgekuendigte
-  Faehigkeit.** `transport_departures` und `transport_trip_plan` schrieben
-  `await ctx.info(...)`. SEP-2577 kuendigt die Logging-Faehigkeit mit
-  `2026-07-28` ab, und die Revision macht die Zustellung zu einem Opt-in **pro
-  Anfrage**: ohne den reservierten `_meta`-Schluessel
-  `io.modelcontextprotocol/logLevel` liefert `allowed_log_levels` eine leere
-  Menge, und `send_log_message` verwirft den Eintrag. Eine Fortschrittsmeldung,
-  die nur ankommt, wenn der Aufrufer vorher Logs bestellt hat, ist kein
-  Betriebslog — sie steht jetzt im stderr-Logger des Servers (OBS-003/004, mit
-  `LOG_FORMAT=json` strukturiert).
-
-  Beide Werkzeuge haben damit ihren `ctx: Context`-Parameter verloren. Er stand
-  nie im veroeffentlichten Input-Schema — das SDK filtert ihn heraus —, die
-  SEC-022-Fingerabdruecke sind deshalb unveraendert und `tool_manifest.json`
-  brauchte keine Neuberechnung; `test_tool_integrity.py` haelt das fest, statt
-  es zu glauben. Mit dem Parameter fielen auch die beiden handgeschriebenen
-  `_Ctx`-Stubs aus den Tests weg, die genau eine Methode kannten, weil genau
-  eine benutzt wurde.
-
-### Hinzugefuegt
-
-- **Die Revision `2026-07-28` wird jetzt gemessen, nicht behauptet**
-  (`tests/test_modern_wire.py`, 20 Faelle). Gefahren wird gegen
-  `_build_http_app` — die App, die `main()` unter uvicorn stellt —, mit echten
-  Einzelaustausch-POSTs ohne `initialize` und ohne `Mcp-Session-Id`:
-  `server/discover` (`supportedVersions`), `tools/list` (`resultType`,
-  Werkzeugsatz gegen das gepinnte Manifest, `ttlMs`/`cacheScope` ueber den
-  Transport statt nur im Prozess), ein `tools/call` mit `Mcp-Name`-Wegweiser,
-  die drei Absage-Sprossen der Ladder (fehlender Umschlag → `-32602`,
-  Wegweiser-Kopfzeile im Widerspruch zum Rumpf → `-32020`, nicht bediente
-  Revision → `-32022` samt Liste der bedienten) und die Grenze zwischen den
-  Aeren: ein `initialize`, das `2026-07-28` verlangt, bekommt die Decke der
-  alten Aera, und ein moderner Umschlag mit `2025-11-25` faellt auf den
-  Legacy-Pfad.
-
-  `tests/test_protocol_version.py` nannte seinen Konstanten-Pin bisher selbst
-  die schwaechere Form und begruendete das damit, dieses Repo baue keine
-  ASGI-App, durch die sich eine Anfrage schicken liesse. **Das stimmte nicht** —
-  `_build_http_app` baut sie, und `tests/test_cors.py` fuhr schon damals einen
-  `TestClient` dagegen. Die Begruendung war keine Messgrenze, sondern eine
-  ungepruefte Annahme ueber das eigene Repo; beide READMEs und der Docstring
-  sagen das jetzt so. Der Konstanten-Pin bleibt daneben stehen: er sichert, was
-  das SDK *anbietet*, die Messung, was der Server davon *bedient*.
-
-### Fixed
-
 - **`allow_headers` stand auf `["*"]`.** Starlette schaltet damit auf
   `allow_all_headers` und spiegelt im Preflight zurück, was der Browser
   ankündigt — jeder erlaubte Origin durfte jeden beliebigen Header senden. Die
@@ -100,37 +267,6 @@ All notable changes to this project are documented here.
   in diesem Code sind ausgehend — der Server authentifiziert sich gegenüber der
   Upstream-API — und der MCP-Endpunkt selbst hat kein Gate. Einen Header zu
   nennen, den der Server nie liest, wäre dieselbe Raterei wie die Wildcard.
-
-### Hinzugefuegt
-
-- **Frischehinweise auf den auflistenden Methoden** (SEP-2549, Spec
-  `2026-07-28`): `ttlMs` 300000, `cacheScope` `public`. Das SDK setzt beides von
-  sich aus auf «sofort veraltet, nie geteilt» — wer nichts übergibt, lässt jeden
-  Client bei jeder Verbindung neu auflisten, für Verzeichnisse, die per
-  Dekorator beim Import feststehen und nicht vom Aufrufer abhängen.
-
-  `resources/read` und `prompts/get` bleiben ohne Hinweis: das wäre eine
-  Zusicherung über den Inhalt statt über das Verzeichnis. Ein Test hält das an
-  der Antwort fest, ein zweiter an der Konfiguration.
-
-- **Protokoll-Gate: beide Spec-Aeren gepinnt und geprueft**
-  (`tests/test_protocol_version.py`). `mcp` 2.x bedient zwei Aeren ueber
-  denselben Server — den `initialize`-Handshake, der bei `2025-11-25`
-  deckelt, und den Pro-Request-Envelope, der `2026-07-28` erreicht.
-  `LATEST_PROTOCOL_VERSION` ist ein Alias auf die **moderne** Aera; wer nur
-  dagegen pinnt, laesst genau die Aera frei wandern, die heutige Clients
-  aushandeln. Beide sind jetzt einzeln gepinnt, ein Dependabot-Bump von
-  `mcp` kann keine davon still verschieben.
-
-  Ohne gemessenen Teil: dieser Server baut keine ASGI-App, durch die sich ein
-  `initialize` schicken liesse. Das Gate haengt deshalb an den SDK-Konstanten —
-  die schwaechere Form, im Docstring benannt statt verschwiegen.
-
-  Beide READMEs beschreiben die Aeren; ein Test haelt jede Sprache einzeln
-  dagegen — im Portfolio sind EN und DE desselben Repos schon dreimal
-  auseinandergelaufen, weil nur eine Fassung nachgezogen wurde.
-
-### Fixed
 
 - **Die Quelle liefert SLOIDs statt DiDok-Nummern, und die Reiseplanung über
   Ortsnamen war dadurch tot.** Am 2026-08-10 antwortete
@@ -189,43 +325,6 @@ All notable changes to this project are documented here.
   rot — er hätte auch grün nichts mehr belegt. Die Kante wird jetzt am Element
   `siri:StopPointRef` im XML erkannt, und der Skip ist wieder ehrlich.
 
-### Changed
-
-- **`live-tests.yml` prüft den Schlüssel jetzt zuerst, statt ihn erraten zu
-  lassen.** Ein Lauf von Hand am 2026-08-10 ohne gesetztes `TRANSPORT_API_KEY`
-  endete mit:
-
-  ```
-  Live-Suite: unknown
-  alle 7 Test(s) uebersprungen — meist ein fehlendes Secret oder eine nicht
-  erfuellte Vorbedingung. Geprueft wurde nichts
-  ```
-
-  Das Urteil ist richtig und bleibt es: pytest endet mit `0`, wenn sich jeder
-  Test übersprungen hat, und `classify_live_run.py` liest deshalb das JUnit-XML
-  statt des Exit-Codes. Genau dafür wurde es geschrieben.
-
-  Nur kann der Klassifikator aus dem XML nicht sehen, **welche** Vorbedingung
-  gefehlt hat — ein fehlendes Secret und eine umbenannte Marke sehen dort
-  identisch aus. Also nennt er beide, und der Leser sucht sich die Antwort über
-  Workflow, Testdatei und Klassifikator zusammen.
-
-  Der fehlende Schlüssel ist der eine Fall, den man **vorher** kennen kann. Eine
-  Gate ganz vorne prüft `secrets.TRANSPORT_API_KEY` und nennt ihn beim Namen,
-  bevor Checkout, Installation und Suite überhaupt laufen.
-
-  Sie ersetzt die Einordnung nicht — sie kommt ihr nur in diesem einen Fall
-  zuvor. Timeout, gescheitertes `pip install`, umbenannte Marke: alles fällt
-  weiterhin dort an und wird dort `unknown`.
-
-  Am Issue ändert der früh rote Job nichts, und das ist richtig: `unknown`
-  öffnet und schliesst ebenfalls keines. Ein Lauf ohne Vergleich darf keinen
-  behaupten — in beide Richtungen. Der Workflow läuft ausserdem nur auf
-  `schedule` und `workflow_dispatch`, nie auf `pull_request`; ein Fork ohne
-  Secrets kann an dieser Gate also nicht scheitern.
-
-### Fixed
-
 - **Der Fix vom 2026-08-07 bestätigte `result` und hörte dort auf.** Das
   Katalog-Werkzeug las danach weiter `result.get("results", [])`, und eine
   Strukturänderung eine Ebene tiefer ergab weiterhin eine leere Datensatzliste
@@ -241,8 +340,6 @@ All notable changes to this project are documented here.
 
   Nachtrag zum Portfolio-Durchlauf
   ([`FID-006`](https://github.com/malkreide/mcp-audit-skill/blob/main/checks/FID-006.md)).
-
-### Fixed
 
 - **Zwei CKAN-Stellen schrieben eine Strukturänderung in eine Leermenge um.**
 
@@ -276,7 +373,7 @@ All notable changes to this project are documented here.
   am 2026-08-07: Acht Server im Portfolio sprechen mit CKAN, alle acht prüfen
   das `success`-Envelope, sieben defaulteten `result` danach.
 
-### Behoben — jede OJP-Anfrage dieses Servers war ungueltig
+#### Jede OJP-Anfrage dieses Servers war ungueltig
 
 Aufgezeichnet wurde am 7.8.2026 der OJP-2.0-Vertrag: das oeffentliche XML-Schema
 der CEN-Norm CEN/TS 17118, fester Tag `v2.0`. Fuenf Befunde, alle am
@@ -320,124 +417,15 @@ stehen gegen die Norm, nicht gegen die Implementierung von
 opentransportdata.swiss — wie tolerant die ist, laesst sich ohne Token nicht
 messen. Ungueltig ist trotzdem ungueltig.
 
-### Hinzugefuegt — aufgezeichnete Herkunft fuer das, was sich aufzeichnen laesst
-
-Alle vier Quellen verlangen einen Bearer-Token; ohne ihn antworten sie mit 401
-bzw. 403 — gemessen, nicht behauptet, und in
-`tests/fixtures/upstream_auth_probe.json` festgehalten. Echte Antwort-Fixtures
-sind hier also nicht ehrlich moeglich, und `PROVENANCE.md` sagt das
-ausdruecklich, statt den handgeschriebenen Payloads ein Datum anzuschreiben, das
-nicht stimmt.
-
-Aufzeichenbar ist der Vertrag. `scripts/record_fixtures.py` liest das
-OJP-2.0-Schema am festen Tag `v2.0` und schreibt einen **abgeleiteten Index**
-(`tests/fixtures/ojp_2_0_contract.json`: 508 Elementnamen, 16 Strukturen, 25
-Gruppen, 3 Aufzaehlungen) samt Quell-URL und SHA-256 jeder gelesenen Datei.
-`--check` rechnet die Ableitung gegen die Quelle nach.
-
-Das Schema selbst liegt **nicht** im Repo: Das Quell-Repository fuehrt keine
-Lizenzdatei, und die zugrunde liegende Norm ist kostenpflichtig. Gruppenverweise
-bleiben im Index unaufgeloest — wer sie beim Aufzeichnen aufloest, schreibt seine
-eigene Lesart hinein und kann sie danach nicht mehr widerlegen.
-
-`tests/test_ojp_contract.py` und `tests/test_place_resolution.py` halten
-Anfragen, Parser und Aufloesung dagegen. Alle neuen Zusicherungen sind
-gegengeprueft: mit zurueckgedrehtem Produktivcode fallen sie, und zwar mit dem
-Befund im Text.
-
-### Hinzugefuegt — die Live-Suite laeuft geplant, statt nur markiert zu sein
-
-`ci.yml` faehrt `pytest tests/ -m "not live"`. Das ist richtig — ein fremder 503
-darf keinen fremden Pull Request rot machen — und es liess die Live-Tests seit
-ihrer Entstehung an keiner Stelle laufen. **`-m "not live"` ist kein Ort, an dem
-Tests laufen; es ist die Abwesenheit eines solchen.**
-
-Ausgerechnet sie sind die einzigen im Repo, die einer falschen Grundannahme
-ueber opentransportdata.swiss widersprechen koennen: Jeder andere Test prueft gegen eine
-Fixture, und die Fixture ist aus derselben Annahme geschrieben wie der Code. Bei
-`meteoswiss-mcp` fielen am 30.7.2026 beim ersten Lauf seit Monaten drei von sechs
-Tests; bei `zh-education-mcp` lief am 3.8.2026 der Code monatelang gegen
-umbenannte Feldnamen, ohne dass ein Test rot wurde.
-
-`.github/workflows/live-tests.yml`: montags 05:19 UTC auf einer ungeraden Minute, dazu
-`workflow_dispatch`. Der PR-Lauf bleibt unveraendert — dies ist ein
-*zusaetzlicher* Lauf, kein Umbau.
-
-**Drei Antworten, nicht zwei.** `if: failure()` kennt rot und nicht rot; ein
-gescheitertes `pip install` saehe damit aus wie ein gebrochener Vertrag mit der
-Quelle. `scripts/classify_live_run.py` liest deshalb das JUnit-XML und trennt
-`clear`, `finding` und `unknown`. Ein `unknown` schliesst nie ein Issue:
-zuzumachen hiesse zu behaupten, der Vergleich sei gelaufen.
-
-Der Fall, der die Einordnung noetig macht, ist der uebersprungene Lauf: pytest
-endet mit 0, wenn jeder Test uebersprungen wurde. `tests - skipped == 0` ist
-deshalb `unknown` — gemessen am 7.8.2026 an `swiss-transport-mcp`, wo ohne
-`TRANSPORT_API_KEY` alle sechs Live-Tests uebersprungen werden und ein
-Exit-Code-Check gruen gemeldet haette.
-
-Die Einordnung steht in einem Skript mit eigenem Test, nicht in einem
-`run:`-Block: Sie entscheidet, ob ein Issue auf- oder zugeht, und das ist der
-einzige Teil des Workflows, der etwas behauptet.
-
-Ein Issue mit stabilem Titel-Praefix und Label `upstream` wird kommentiert statt
-verdoppelt. Die pytest-Ausgabe geht ueber `env` ins Skript, nicht ueber `${ }`
-— sie ist fremder Text, der sonst in einem JavaScript-Template-Literal landet.
-
-Kadenz und Zustaendigkeit stehen in CONTRIBUTING (beide Sprachen). Gemessen mit
-`live_schedule_probe` aus `mcp-continuous-auditor`: vorher `LIVE_UNSCHEDULED`,
-jetzt `LIVE_SCHEDULED`.
-
-### Added
-
-- **Retry-Politik gegenüber opentransportdata.swiss** (ARCH-014), in einem
-  gemeinsamen Kern (`retry.py`) für alle vier Aufrufstellen: `ojp_request`,
-  `ckan_request` sowie `TransportAPIClient.get` und `.post_xml`.
-
-  Bisher gab es keine — obwohl der Docstring von `TransportAPIClient`
-  «Fehlerbehandlung (Retries, Timeouts, HTTP-Fehler)» versprach. Ein einzelner
-  Netzwerkfehler, ein Timeout oder ein 503 beendete den Tool-Aufruf.
-
-  Wiederholt werden Netzwerkfehler, Timeouts, 5xx und 429 — vier Versuche. Ein
-  4xx ausser 429 scheitert weiterhin sofort; ebenso jeder `ValueError`. Das
-  betrifft namentlich den 403-Pfad von CKAN: Die Meldung nennt das fehlende
-  Abo im API-Manager und ist damit das, was den Fehler behebbar macht — sie
-  darf nicht hinter einem generischen Retry verschwinden.
-
-- **`Retry-After` wird gelesen und schlägt die eigene Backoff-Kurve**, in
-  beiden Formen nach RFC 9110 §10.2.3 (Sekundenzahl und HTTP-Datum). Ein
-  unbrauchbarer Header führt zurück auf die Kurve statt zum Absturz.
-
-- **Backoff ist gestreut (Jitter).** `2**attempt` ist deterministisch: Fällt
-  die Quelle aus, während mehrere Clients sie abfragen, laufen deren Retries im
-  Gleichtakt und die Last kommt als Welle zurück — genau wenn die Quelle sich
-  erholt. Exponentiell `[0.5x, 1.5x]`, auf einem `Retry-After` einseitig
-  `[1.0x, 1.25x]`. Deckel von 20 s je Einzelwartezeit, angewandt **nach** dem
-  Jittern — die andere Reihenfolge macht den Deckel zu gar keiner Schranke.
-
-- **Gesamtbudget über den ganzen Aufruf: 25 s, für OJP 45 s.** Die Abweichung
-  ist begründet und nicht versehentlich: `OJP_TIMEOUT = 45.0` steht seit je im
-  Repo, weil Trip-Berechnungen länger dauern. Ein 25-s-Budget hätte legitime
-  Verbindungsabfragen abgewürgt, die heute durchgehen — der Retry soll
-  Ausfälle überbrücken und nicht funktionierende Anfragen kürzen. Ein Test
-  hält beide Werte gegen `MCP_DEFAULT_TIMEOUT` fest.
-
-  Das Budget hängt an einer `asyncio.timeout`-Deadline, nicht am
-  httpx-Timeout: httpx begrenzt pro Operation, und sein Read-Timeout beginnt
-  mit jedem Chunk von vorn — eine langsam tröpfelnde Antwort würde das Budget
-  sonst überdauern, ohne dass ein einzelner Read abläuft.
-
-- **Der Rate-Limiter zählt jeden Versuch, nicht jeden Aufruf.** Ein Retry ist
-  eine weitere Abfrage bei der Quelle. Zählte nur der erste, meldete der
-  Limiter weniger Verbrauch, als er zugelassen hat — und ausgerechnet ein
-  Server, der wegen Überlast 503 sendet, bekäme ungezählte Wiederholungen.
-
-### Fixed
-
 - **Ein aufgebrauchtes Gesamtbudget wäre der Fehlerabbildung entkommen.** Es
   wirft den builtin `TimeoutError`, `TransportAPIClient.get` fing aber nur
   `httpx.TimeoutException` — der rohe Fehler wäre beim Tool angekommen. Die
   Meldung nannte ausserdem ein festes «Timeout nach 30s» und benennt jetzt das
   tatsächlich erschöpfte Budget.
+
+## [0.4.0] – 2026-07-30
+
+### Added
 
 - **Inbound Host/Origin allow-list for the network transports
   (`MCP_ALLOWED_HOSTS`, SEC-005).** Comma-separated, compared verbatim so an
@@ -470,8 +458,6 @@ jetzt `LIVE_SCHEDULED`.
 - `tests/test_transport_security.py` (17 tests). The load-bearing one is
   **right hostname, wrong port**: `evil.test` alone proves little, because a
   fallback loopback-only policy rejects it too.
-
-## [0.4.0] – 2026-07-30
 
 ### Fixed
 
