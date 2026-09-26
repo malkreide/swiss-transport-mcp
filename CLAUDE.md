@@ -262,35 +262,41 @@ eines Gates gehört nicht zurück. Was hier steht, ist eine Beobachtung über da
 Lesen eines Signals, und sie widerlegt genau die Annahme, die man ohne sie
 macht.
 
-**Ein Merge kappt einen laufenden Review nicht.** Am 18./26.9.2026 über vier
-PRs in `swiss-transport-mcp` gemessen, jeder drei bis fünf Sekunden nach
-«ready for review» gemergt:
+**Ein Merge kappt einen laufenden Review nicht.** Über **fünf** PRs in
+`swiss-transport-mcp` gemessen — #67 am 18.9.2026, #72/#75/#76/#77 am 26.9.2026.
+Jeder wurde **drei bis fünf Sekunden** nach «ready for review» gemergt, jeder
+Review startete danach, jeder lief zu Ende, keiner fand etwas.
 
-| PR | ready | Merge | Review fertig |
-|---|---|---|---|
-| #67 | 18:23:31 | 18:23:34 | 18:24:46 |
-| #72 | 12:22:36 | 12:22:40 | 12:23:14 |
-| #75 | 13:11:09 | 13:11:14 | 13:12:17 |
-| #76 | 16:52:02 | 16:52:06 | 16:53:08 |
+Hier stand zuerst eine Tabelle mit den Einzelzeiten. Fünf gleiche Verläufe
+belegen aber nicht mehr als eine Spannweite, und jede weitere Zeile hätte den
+Abschnitt zum Logbuch gemacht. Was von der Reihe bleibt, ist die Dauer des
+ersten und des letzten Falls — damit die Spannweite belegt ist und nicht bloss
+behauptet.
 
-Alle vier Reviews starteten **nach** dem Merge und liefen zu Ende, alle vier
-ohne Befund. Die erste Einordnung hier lautete «ungeprüft gemergt» und war
-falsch; sie stand einen halben Tag so in einem Notion-Eintrag. Der Fehler ist
-derselbe wie beim 403 weiter oben, nur andersherum: Aus dem Fehlen einer
-Meldung wurde auf das Fehlen einer Prüfung geschlossen.
+**Die brauchbarere Zahl ist die zweite:** Vom Umschalten auf «ready» bis
+`✅ Completed` vergingen **38 bis 75 Sekunden** (#67 als erster Fall 75, #77 als
+letzter 48). So lange müsste ein Merge warten, um das Ergebnis mitzunehmen —
+eine Grössenordnung, keine Garantie.
+
+Die erste Einordnung hier lautete «ungeprüft gemergt» und war falsch; sie stand
+einen halben Tag so in einem Notion-Eintrag. Der Fehler ist derselbe wie beim
+403 weiter oben, nur andersherum: Aus dem Fehlen einer Meldung wurde auf das
+Fehlen einer Prüfung geschlossen.
 
 **Was der schnelle Merge wirklich kostet,** ist deshalb nicht der Review,
 sondern der Entscheid: Er fiel jedes Mal, bevor das Ergebnis vorlag. Wer eine
 Checkliste «kein offener Befund beim Merge» führt, kann sie in diesem Zeitraum
 nicht erfüllen — nicht weil niemand prüft, sondern weil noch niemand
-fertig ist.
+fertig ist. Dieser Abschnitt selbst kam so herein: #77 war vier Sekunden nach
+«ready» gemergt, und die Tabelle, die er mitbrachte, war damit bei ihrer
+Ankunft schon eine Zeile zu kurz.
 
 **Woran sich «geprüft» erkennen lässt.** Der Summary-Kommentar des Bots ist die
 tragende Form: eine Zeile, die von `🔄 Running` auf `✅ Completed` springt, mit
 Commit-Angabe. Ein Review-**Objekt** («💡 Codex Review») entsteht nur bei einem
-Befund — `get_reviews` gab in allen vier Fällen `[]` zurück, und das ist kein
+Befund — `get_reviews` gab in allen fünf Fällen `[]` zurück, und das ist kein
 Hinweis auf einen ungeprüften PR. Eine gesonderte Befundlos-Meldung erschien in
-keinem der vier Fälle.
+keinem der fünf Fälle.
 
 Praktisch heisst das: `get_comments` **und** `get_reviews` abfragen, und im
 Kommentar den **Text** lesen. Der Zähler trägt nichts — `comments: 1` deckt
@@ -299,9 +305,9 @@ gegensätzliche Zustände.
 
 **Der Infokasten ist keine Quelle.** Er behauptet unter jedem Lauf, der Bot
 reagiere mit 👀 während der Prüfung und mit 👍, wenn alles ohne Befund endet.
-In allen vier Fällen stand `reactions.total_count` auf `0`. Diese Zeile stand
+In allen fünf Fällen stand `reactions.total_count` auf `0`. Diese Zeile stand
 in der entfernten Fassung dieses Abschnitts zwei Versionen lang als Tatsache
-und ist jetzt zum vierten Mal widerlegt.
+und ist jetzt zum fünften Mal widerlegt.
 
 ### Wenn zwei Agenten dasselbe tun
 
