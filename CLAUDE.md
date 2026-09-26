@@ -254,6 +254,55 @@ Die Kosten der Ableitung sind gemessen: ein Arbeitstag, an dem der PR-Text den
 falschen Namen trug und in den Einstellungen nach einer Zeichenfolge gesucht
 wurde, die dort nicht steht.
 
+### Wenn ein Review nach dem Merge noch läuft
+
+Am 23.9.2026 ist der Codex-Abschnitt aus dieser Datei entfernt worden, weil
+dieses Repo keinen `codex-gate`-Workflow trägt. Das bleibt so — die Mechanik
+eines Gates gehört nicht zurück. Was hier steht, ist eine Beobachtung über das
+Lesen eines Signals, und sie widerlegt genau die Annahme, die man ohne sie
+macht.
+
+**Ein Merge kappt einen laufenden Review nicht.** Am 18./26.9.2026 über vier
+PRs in `swiss-transport-mcp` gemessen, jeder drei bis fünf Sekunden nach
+«ready for review» gemergt:
+
+| PR | ready | Merge | Review fertig |
+|---|---|---|---|
+| #67 | 18:23:31 | 18:23:34 | 18:24:46 |
+| #72 | 12:22:36 | 12:22:40 | 12:23:14 |
+| #75 | 13:11:09 | 13:11:14 | 13:12:17 |
+| #76 | 16:52:02 | 16:52:06 | 16:53:08 |
+
+Alle vier Reviews starteten **nach** dem Merge und liefen zu Ende, alle vier
+ohne Befund. Die erste Einordnung hier lautete «ungeprüft gemergt» und war
+falsch; sie stand einen halben Tag so in einem Notion-Eintrag. Der Fehler ist
+derselbe wie beim 403 weiter oben, nur andersherum: Aus dem Fehlen einer
+Meldung wurde auf das Fehlen einer Prüfung geschlossen.
+
+**Was der schnelle Merge wirklich kostet,** ist deshalb nicht der Review,
+sondern der Entscheid: Er fiel jedes Mal, bevor das Ergebnis vorlag. Wer eine
+Checkliste «kein offener Befund beim Merge» führt, kann sie in diesem Zeitraum
+nicht erfüllen — nicht weil niemand prüft, sondern weil noch niemand
+fertig ist.
+
+**Woran sich «geprüft» erkennen lässt.** Der Summary-Kommentar des Bots ist die
+tragende Form: eine Zeile, die von `🔄 Running` auf `✅ Completed` springt, mit
+Commit-Angabe. Ein Review-**Objekt** («💡 Codex Review») entsteht nur bei einem
+Befund — `get_reviews` gab in allen vier Fällen `[]` zurück, und das ist kein
+Hinweis auf einen ungeprüften PR. Eine gesonderte Befundlos-Meldung erschien in
+keinem der vier Fälle.
+
+Praktisch heisst das: `get_comments` **und** `get_reviews` abfragen, und im
+Kommentar den **Text** lesen. Der Zähler trägt nichts — `comments: 1` deckt
+«läuft noch» und «fertig, ohne Befund» gleichermassen ab, also zwei
+gegensätzliche Zustände.
+
+**Der Infokasten ist keine Quelle.** Er behauptet unter jedem Lauf, der Bot
+reagiere mit 👀 während der Prüfung und mit 👍, wenn alles ohne Befund endet.
+In allen vier Fällen stand `reactions.total_count` auf `0`. Diese Zeile stand
+in der entfernten Fassung dieses Abschnitts zwei Versionen lang als Tatsache
+und ist jetzt zum vierten Mal widerlegt.
+
 ### Wenn zwei Agenten dasselbe tun
 
 Vor dem Anlegen eines Branches mit vorgegebenem Namen prüfen, ob es ihn schon
