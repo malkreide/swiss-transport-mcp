@@ -17,6 +17,14 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Gebaut wird aus pyproject.toml, nicht aus dem Tag. Stimmen die beiden
+      # nicht ueberein, entstuende ein Paket mit der alten Nummer: PyPI lehnt
+      # es als Duplikat ab, und die MCP-Registry bekaeme eine Version, die es
+      # auf PyPI nicht gibt. Der Abbruch steht vor dem Build, damit der Grund
+      # in der Absage steht und nicht in einem PyPI-Fehler ganz am Ende.
+      - name: Verify the tag matches the committed version
+        run: python scripts/check_version_sync.py --expect "$GITHUB_REF_NAME"
+
       - name: Install build tools
         run: pip install build
 
@@ -60,11 +68,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Sync server.json version to the release tag
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' \
-            server.json > server.tmp && mv server.tmp server.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      # Hier stand ein `jq`-Schritt, der `server.json` aus dem Tag-Namen
+      # ueberschrieb. Er war der Grund, warum eine veraltete committete Version
+      # nie auffiel: Das publizierte Manifest war immer richtig, die Datei im
+      # Repo durfte falsch bleiben — waehrend der PyPI-Build daneben genau
+      # diese Datei las. Jetzt wird geprueft statt geflickt; `server.json` ist
+      # bereits korrekt, weil `check_version_sync.py` es gegen
+      # `pyproject.toml` haelt und dieses gegen den Tag.
+      - name: Verify the tag matches the committed version
+        run: python scripts/check_version_sync.py --expect "$GITHUB_REF_NAME"
 
       - name: Install mcp-publisher
         run: |

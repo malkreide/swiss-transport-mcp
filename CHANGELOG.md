@@ -3,6 +3,42 @@
 Alle relevanten Änderungen an diesem Projekt werden hier dokumentiert.
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- **Der Publish-Pfad konnte still die falsche Version bauen.** `publish.yml`
+  synchronisierte `server.json` aus dem Tag-Namen, der PyPI-Job baute daneben
+  mit `python -m build` aus dem Tag-Checkout — also aus `pyproject.toml`, das
+  niemand gegen den Tag abglich. Ein Tag `v0.5.0` auf einem `pyproject.toml`
+  mit `0.4.0` hätte damit ein Paket `0.4.0` gebaut: PyPI lehnt es als Duplikat
+  ab, oder es geht als bereits veröffentlichte Version durch, während die
+  MCP-Registry brav `0.5.0` meldet.
+
+  `scripts/check_version_sync.py` kannte den Fall nicht — es vergleicht
+  `pyproject.toml` gegen `server.json` und die README-Badges, und ein Tag-Name
+  kommt darin nicht vor. Neu nimmt es `--expect <Version>` und bricht ab, wenn
+  die committete Version eine andere ist. `publish.yml` ruft es damit in
+  beiden Jobs auf, jeweils vor dem ersten Schritt, der etwas nach draussen
+  gibt.
+
+  **Geprüft statt geflickt.** Der `jq`-Schritt, der `server.json` aus dem Tag
+  überschrieb, fällt weg. Er war der Grund, warum eine veraltete committete
+  Version nie auffiel: Das publizierte Manifest war immer richtig, die Datei
+  im Repo durfte falsch bleiben. Der Docstring des Checks nennt genau das seit
+  jeher als Hintergrund — jetzt stimmt die Beschreibung wieder mit dem
+  Verhalten überein. Nach dem Abgleich ist der Schritt ohnehin redundant:
+  `server.json` passt zu `pyproject.toml`, und dieses zum Tag.
+
+  Die Logik steht im Skript, nicht in der YAML-Shell, damit sie prüfbar ist —
+  ein Schritt, der einmal pro Release läuft und nie in der gewöhnlichen CI,
+  ist der schlechteste Ort für ungeprüften Code. Fünf Tests in beide
+  Richtungen: passender Tag grün, abweichender rot mit beiden Nummern in der
+  Absage, führendes `v` abgeschnitten (die Tags dieses Repos tragen es), eine
+  dynamische Version als «nicht prüfbar» statt still grün — und die
+  Gegenprobe, dass ohne das Flag gar nichts verglichen wird, damit die
+  gewöhnliche CI nicht an einer Tag-Nummer scheitert, die es dort nicht gibt.
+
 ## [0.5.0] – 2026-09-26
 
 ### Added

@@ -13,6 +13,12 @@ still falsch zu liegen, und jeder davon hat hier einen Test:
   - Er meldet «OK», wo er gar nichts verglichen hat — weil nur eine der
     Stellen existiert.
 
+Dazu `--expect`, der Abgleich zwischen Release-Tag und committeter Version.
+Er sitzt im Publish-Pfad, laeuft also genau einmal pro Release und nie in der
+gewoehnlichen CI — was ihn zum schlechtesten Ort fuer einen ungepruefen Fehler
+macht. Zwei Richtungen, beide hier: Er muss bei Abweichung fallen, und er darf
+ohne das Flag gar nichts tun.
+
 Nur Standardbibliothek, kein Netz.
 """
 
@@ -243,7 +249,7 @@ class PyprojectSpecTest(unittest.TestCase):
 class MainTest(unittest.TestCase):
     """main() als Ganzes — der Abgleich entscheidet ueber den Exit-Code."""
 
-    def run_main(self, tmp: Path) -> tuple[int, str]:
+    def run_main(self, tmp: Path, argv: list[str] | None = None) -> tuple[int, str]:
         # Nicht ueberschreiben: Faelle, die eine eigene pyproject mitbringen,
         # pruefen genau deren Inhalt.
         path = tmp / "pyproject.toml"
@@ -255,7 +261,7 @@ class MainTest(unittest.TestCase):
         out, err = io.StringIO(), io.StringIO()
         try:
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-                cvs.main()
+                cvs.main(argv or [])
             code = 0
         except SystemExit as exc:
             code = exc.code
@@ -310,6 +316,81 @@ class MainTest(unittest.TestCase):
             code, text = self.run_main(path)
         self.assertEqual(code, 0)
         self.assertIn("nur an einer Stelle", text)
+
+
+class ExpectTest(unittest.TestCase):
+    """`--expect <Tag>`: der Abgleich, der den Publish-Pfad absichert.
+
+    Gebaut wird aus `pyproject.toml`, getaggt wird daneben. Fallen die beiden
+    auseinander, baut der Release-Workflow die alte Nummer — und merkt es erst
+    an PyPIs Duplikat-Absage, wenn ueberhaupt.
+    """
+
+    run_main = MainTest.run_main
+
+    def test_passender_tag_ist_gruen(self):
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            (path / "pyproject.toml").write_text(
+                '[project]\nname = "demo"\nversion = "0.5.0"\n', encoding="utf-8"
+            )
+            code, text = self.run_main(path, ["--expect", "0.5.0"])
+        self.assertEqual(code, 0, text)
+
+    def test_abweichender_tag_ist_rot(self):
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            (path / "pyproject.toml").write_text(
+                '[project]\nname = "demo"\nversion = "0.4.0"\n', encoding="utf-8"
+            )
+            code, text = self.run_main(path, ["--expect", "0.5.0"])
+        self.assertEqual(code, 1)
+        self.assertIn("TAG-DRIFT", text)
+        # Beide Nummern muessen in der Absage stehen: «passt nicht» allein
+        # laesst offen, welche der beiden Stellen nachzuziehen ist.
+        self.assertIn("0.5.0", text)
+        self.assertIn("0.4.0", text)
+
+    def test_das_fuehrende_v_des_tags_wird_abgeschnitten(self):
+        """Die Tags dieses Repos heissen `v0.5.0`, `pyproject.toml` nie.
+
+        Ohne das Abschneiden waere jeder Release rot — und zwar mit der
+        Meldung, die Versionen wichen ab, obwohl sie es nicht tun.
+        """
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            (path / "pyproject.toml").write_text(
+                '[project]\nname = "demo"\nversion = "0.5.0"\n', encoding="utf-8"
+            )
+            code, text = self.run_main(path, ["--expect", "v0.5.0"])
+        self.assertEqual(code, 0, text)
+
+    def test_ohne_das_flag_vergleicht_er_nichts(self):
+        """Die Gegenprobe zur Richtung: Der Abgleich ist opt-in.
+
+        Ohne diese Zeile koennte `--expect` auch dann greifen, wenn niemand es
+        uebergibt — und die gewoehnliche CI, die den Check ohne Argument fährt,
+        wuerde an einer Tag-Nummer scheitern, die es dort gar nicht gibt.
+        """
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            (path / "pyproject.toml").write_text(
+                '[project]\nname = "demo"\nversion = "0.4.0"\n', encoding="utf-8"
+            )
+            code, text = self.run_main(path)
+        self.assertEqual(code, 0, text)
+        self.assertNotIn("TAG-DRIFT", text)
+
+    def test_dynamische_version_kann_die_zusicherung_nicht_geben(self):
+        """Ein «OK» waere hier die Behauptung einer Pruefung, die nicht lief.
+
+        Ohne `version` in `pyproject.toml` gibt es keine committete Nummer zum
+        Vergleichen. Der Check ueberspringt sich sonst still gruen — und genau
+        dieses Gruen wuerde im Publish-Pfad als bestandener Abgleich gelesen.
+        """
+        with root(workflow=WORKFLOW.format(version="0.16.1")) as path:
+            (path / "pyproject.toml").write_text(
+                '[project]\nname = "demo"\ndynamic = ["version"]\n', encoding="utf-8"
+            )
+            code, text = self.run_main(path, ["--expect", "0.5.0"])
+        self.assertEqual(code, 1)
+        self.assertIn("NICHT PRUEFBAR", text)
 
 
 if __name__ == "__main__":

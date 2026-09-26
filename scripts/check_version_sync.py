@@ -9,10 +9,14 @@ Stellen, die dieselbe Nummer wiederholen:
     `packages[*].version`
   - die Versions-Badges der READMEs
 
-Hintergrund: `publish.yml` synchronisiert `server.json` beim Veröffentlichen
-aus dem Tag-Namen — die *committete* Version wirkt also nie auf das
-publizierte Artefakt und fällt deshalb nicht auf, wenn sie veraltet. Die
-README-Badges erzwingt überhaupt nichts.
+Hintergrund: `publish.yml` hat `server.json` beim Veröffentlichen aus dem
+Tag-Namen überschrieben. Die *committete* Version wirkte damit nie auf das
+publizierte Artefakt und fiel nicht auf, wenn sie veraltet war — während der
+PyPI-Build dieselbe Nummer aus `pyproject.toml` nahm, das niemand abglich. Ein
+Tag `v0.5.0` auf einem `pyproject.toml` mit `0.4.0` hätte also ein Paket
+`0.4.0` gebaut. Seit `--expect` (unten) prüft der Publish-Pfad stattdessen,
+dass Tag und committete Version übereinstimmen, statt die Abweichung
+zuzudecken. Die README-Badges erzwingt weiterhin nur dieser Check hier.
 
 Zweiter Teil: in `src/` darf keine Versionsnummer stehen. Der Laufzeit-Wert
 kommt aus den Paket-Metadaten (`importlib.metadata.version()`); ein wieder
@@ -29,12 +33,17 @@ schon.
 
 Verwendung:
     python scripts/check_version_sync.py     # exit 1 bei Abweichung
+    python scripts/check_version_sync.py --expect v0.5.0
+        # zusätzlich: die committete Version MUSS diesen Tag nennen.
+        # Ein führendes `v` wird abgeschnitten — die Tags dieses Repos
+        # tragen es, `pyproject.toml` nicht.
 
 Bewusst nur Standardbibliothek — der Check braucht keine Projekt-Installation
 und läuft damit auch in schlanken CI-Jobs. Auf Python 3.10 (noch keine
 `tomllib`) greift ein Minimal-Parser für die zwei benötigten Felder.
 """
 
+import argparse
 import io
 import json
 import re
@@ -276,7 +285,26 @@ def read_project() -> dict:
     return out
 
 
-def main() -> None:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Versions-Synchronität prüfen (siehe Modul-Docstring).",
+    )
+    parser.add_argument(
+        "--expect",
+        metavar="VERSION",
+        help=(
+            "Version, die pyproject.toml nennen MUSS — im Publish-Pfad der "
+            "Release-Tag. Ein führendes 'v' wird abgeschnitten."
+        ),
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    expected = parse_args(argv).expect
+    if expected is not None:
+        expected = expected[1:] if expected.startswith("v") else expected
+
     project = read_project()
     dist = project["name"]
     version = project.get("version")
@@ -284,8 +312,34 @@ def main() -> None:
     if version is None:
         # `dynamic = ["version"]`: die Version entsteht beim Bauen, ein
         # Literal in src/ ist dort die Quelle und kein Fehler.
+        if expected is not None:
+            # Wer `--expect` übergibt, will eine Zusicherung. Es gibt hier
+            # keine committete Nummer, gegen die sich vergleichen liesse — ein
+            # «OK» waere dann die Behauptung einer Pruefung, die nicht lief.
+            print(
+                "NICHT PRUEFBAR: pyproject.toml nutzt eine dynamische Version, "
+                f"--expect {expected!r} hat nichts zum Vergleichen.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         print("Versions-Sync übersprungen: pyproject.toml nutzt eine dynamische Version.")
         return
+
+    if expected is not None and version != expected:
+        print(
+            f"TAG-DRIFT: der Tag nennt {expected!r}, pyproject.toml steht auf {version!r}.",
+            file=sys.stderr,
+        )
+        print(
+            "\nGebaut wird aus pyproject.toml, nicht aus dem Tag. Ohne diesen "
+            "Abbruch entstünde ein Paket der alten Nummer — PyPI lehnt es als "
+            "Duplikat ab, und die MCP-Registry bekäme eine Version, die es auf "
+            "PyPI nicht gibt. Den Bump zuerst auf den Default-Branch bringen "
+            "(pyproject.toml, server.json, README-Badges im selben Commit), "
+            "dann neu taggen.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     found = collect_declared(version)
     mismatches = [(where, value) for where, value in found if value != version]
@@ -297,9 +351,10 @@ def main() -> None:
         for where, value in mismatches:
             print(f"  {where} = {value!r}", file=sys.stderr)
         print(
-            "\nAlle Stellen im selben Commit bumpen. Hinweis: publish.yml "
-            "überschreibt server.json beim Veröffentlichen ohnehin aus dem Tag — "
-            "die committete Version bleibt trotzdem die, die Menschen lesen.",
+            "\nAlle Stellen im selben Commit bumpen. Der Publish-Pfad flickt "
+            "das nicht mehr: publish.yml ruft diesen Check mit --expect "
+            "<Tag> und bricht bei Abweichung ab, statt server.json aus dem "
+            "Tag zu überschreiben.",
             file=sys.stderr,
         )
         sys.exit(1)
